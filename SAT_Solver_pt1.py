@@ -34,16 +34,3 @@ for i in rulesList:
 
 
 
-"""
-# Appending given Sudoku puzzle to the list of rules so it's built in the problem we have
-print(rulesList)
-
-
-# Intializing soln representation as a dictionary
-FinalSoln = {}
-for i in rulesList:
-    for j in i:
-        FinalSoln[abs(j)] = 0
-        """
-
-
