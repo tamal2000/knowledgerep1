@@ -1,39 +1,81 @@
 import random
+import time
 
-
-def readDIMACS(filename):
+def readDIMACS(filename,sudokuNum=None):
     """
-    convert DIMACS file into list of numbers
+    convert DIMACS file into list of numbers. There's an if-else statement that acts as a switch to see whether
+    you're inputting a list of rules OR the non-DIMACS version of Sudoku puzzle. If it's a non-DIMACS Sudoku puzzle,
+    it call the function getMySudoku(filename, sudokuNum).
 
     :param filename:
     :return: list
     """
 
-    myList = []
-    f = open(filename, "r")
-    for line in f:
-        line = line.split()
-        # Use 'try' and 'except' to skip over any non-integer lists
-        try:
-            line = list(map(int, line))
-            line = line[0:len(line) - 1]  # removes zero from the end of each line
-            myList.append(line)
-        except:
-            pass
-
+    # Processes the rules List
+    if sudokuNum == None:
+        myList = []
+        f = open(filename, "r")
+        for line in f:
+            line = line.split()
+            # Use 'try' and 'except' to skip over any non-integer lists
+            try:
+                line = list(map(int, line))
+                line = line[0:len(line) - 1]  # removes zero from the end of each line
+                myList.append(line)
+            except:
+                pass
+    # Pulls a DIMACS version of the Sudoku list and outputs it in same format as Sudoku rules (so you can concatonate the
+    # two list later on)
+    else:
+        myList = []
+        DIMACS_Lines = getMySudoku(filename, sudokuNum)
+        for index in range(len(DIMACS_Lines)):
+            makelineList = []
+            line = DIMACS_Lines[index]
+            #line = list(map(int, line))
+            line = line[0:len(line) - 2]  # removes zero AND whitespace from the end of each line
+            line = int(line)
+            makelineList.append(line)
+            myList.append(makelineList)
     return myList
 
+def getMySudoku(filename, sudokuNum):
+    """
+    :param filename: The filename of mega-Sudoku text file.
+    :param sudokuNum: The number of the Sudoku puzzle you want to retrieve. sudokuNum ranges from 0 to len(filename)/81.
+    If the Sudoku puzzle number supplied is out of bounds, you'll recieve an error message.
 
-# To initialize our problem
-myRulesList = readDIMACS('sudoku-rules.txt')
-myPuzzle = readDIMACS('sudoku-example.txt')
-puzzle = myRulesList + myPuzzle
+    :return: 0 : Returns a list of DIMACS lines to be processed in the readDIMACS function
+    """
 
-# To initialize 'blank' soln
-FinalSoln = {}
-for i in puzzle:
-    for j in i:
-        FinalSoln[abs(j)] = 0   #They are initialized as 0, true is 1 and false is -1
+    # Opening the mega-Sudoku file as a single string of text
+    with open(filename, "r") as myfile:
+        fileText = myfile.read()
+    # Splitting the file into the Sodoku puzzle you want
+    """
+    For some reason, there are random '\n' in text file...if you don't remove them, the file won't be parsed correctly....
+    It took me an hour to figure out that was the problem. Though, I don't fully understand why, so if you're feeling
+    extra motivated, you can look it over.
+    """
+    fileText = fileText.replace("\n", "")
+    if len( fileText)/81 >=  sudokuNum:
+        puzzle = fileText[sudokuNum*81 : sudokuNum*81 + 81]
+
+
+        # Convert flat list into ordered list to access numbers
+        puzzleRows = [puzzle[i:i+9] for i in range(0, len(puzzle), 9)]
+        # Then use ordered list to extract (Row,Col,GridValue) and output DIMACS file
+        DIMACS_lines = []
+        for index in range(len(puzzleRows)):
+            puzzleRows[index] = list(puzzleRows[index])
+            for gridIndex, gridValue in enumerate(puzzleRows[index]):
+                if gridValue != '.':
+                    DIMACS_line = str(index+1)+str(gridIndex) + str(gridValue) + str(' 0')
+                    DIMACS_lines.append(DIMACS_line)
+    else:
+        print("Error. Puzzle doesn't exist. Try inputting a smaller, non-negative number.")
+
+    return DIMACS_lines
 
 # ----------Heuristics--------------
 def JW_onesided(myPuzzle, potentialVarsList):
@@ -114,7 +156,9 @@ def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
 # ----------Simplification----------
 def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
     """
-
+    simplifies the puzzle by omitting tautologies, setting pure literals to 1, and omitting unit clauses and setting
+    them to 1. It omits all the variables that are assigned in the FinalSoln from the puzzle to save time in future
+    computations.
     :param puzzle:
     :param FinalSoln:
     :param tautology_switch:
@@ -175,6 +219,17 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
 
 # ----------Splitting----------
 def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heuristic):
+    """
+    gets the puzzle and solution and both their histories and the list of variables that were chosen for spiltting
+    before, and if 
+    :param FinalSoln:
+    :param puzzle:
+    :param FinalSoln_history:
+    :param puzzle_history:
+    :param chosen_list: ordered list of all the variables that were splitted before
+    :param Heuristic:
+    :return:
+    """
     # we can only split those that are not assigned yet
     vars_to_split = []
     for var in FinalSoln:
@@ -224,30 +279,60 @@ def stop(puzzle,FinalSoln):
 
 
 # ----------Main----------
-tautology_switch = 1
-pure_switch = 1
-unit_switch = 1
-Heuristic = 'JW_onesided'
-FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
-stop_check = stop(puzzle, FinalSoln)
-tautology_switch = 0
-a=1
-while stop_check == 0:
-    chosen_list = []
-    puzzle_history = {}
-    FinalSoln_history = {}
-    FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
-                                                                                            puzzle, FinalSoln_history,
-                                                                                            puzzle_history, chosen_list,
-                                                                                            Heuristic)
-    if backtrack_to == -1:  # the problem is inconsistent
-        stop_check = -1
+def SAT(heuristic_switch, puzzle):
+    # To initialize 'blank' soln
+    FinalSoln = {}
+    for i in puzzle:
+        for j in i:
+            FinalSoln[abs(j)] = 0  # They are initialized as 0, true is 1 and false is -1
+
+    if heuristic_switch == 1:
+        Heuristic = 'random'
+    elif heuristic_switch == 2:
+        Heuristic = 'DLIS'
+    elif heuristic_switch == 3:
+        Heuristic = 'JW_onesided'
+    else:
+        raise ValueError('Invalid Heuristic Switch')
+
+    tautology_switch = 1
+    pure_switch = 0
+    unit_switch = 1
+
     FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
     stop_check = stop(puzzle, FinalSoln)
-    if stop_check == 1:
-        print(FinalSoln)
+    #if stop_check ==1:
+        #print(FinalSoln)
 
-    print('iter',a)
-    print(len(puzzle))
-    a +=1
+    tautology_switch = 0
+    pure_switch = 0
 
+    a=1
+    while stop_check == 0:
+        chosen_list = []
+        puzzle_history = {}
+        FinalSoln_history = {}
+        FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
+                                                                                                puzzle, FinalSoln_history,
+                                                                                                puzzle_history, chosen_list,
+                                                                                                Heuristic)
+        if backtrack_to == -1:  # the problem is inconsistent
+            stop_check = -1
+        FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
+        stop_check = stop(puzzle, FinalSoln)
+        #if stop_check == 1:
+            #print(FinalSoln)
+
+        #print('iter',a)
+        a +=1
+    return FinalSoln
+
+# To initialize our problem
+myRulesList = readDIMACS('sudoku-rules.txt')
+for i in range(1,91):
+    start = time.time()
+    myPuzzle = readDIMACS('top91.sdk.txt', i)
+    puzzle = myRulesList + myPuzzle
+    sol = SAT(3,puzzle)
+    end = time.time()
+    print(end - start)
