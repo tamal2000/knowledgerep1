@@ -221,7 +221,10 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
 def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heuristic):
     """
     gets the puzzle and solution and both their histories and the list of variables that were chosen for spiltting
-    before, and if 
+    before. It checks for unassigned variables and adds them to vars_to_split. If there was no var to split, it
+    back tracks. It looks for the closest var that has value 1 and switches that to -1; and reverts the puzzle and
+    solution to their state before that var was splitted. If there are no splitted vars to turn into -1 and there are
+    no unassigned vars, the puzzle is unsolvable.
     :param FinalSoln:
     :param puzzle:
     :param FinalSoln_history:
@@ -247,6 +250,7 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
                 break
         if backtrack_to == 0:
             backtrack_to = -1   # the puzzle is inconsistent
+            print('The puzzle is inconsistent.')
     else:
         if Heuristic == 'random':
             split_var = random.choice(vars_to_split)
@@ -255,7 +259,7 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
         if Heuristic == 'DLIS':
             split_var = DLIS(puzzle, vars_to_split, FinalSoln)
         puzzle_history[split_var] = puzzle.copy()
-        FinalSoln_history[split_var]= FinalSoln.copy()
+        FinalSoln_history[split_var] = FinalSoln.copy()
         FinalSoln[split_var] = 1
         chosen_list.append(split_var)
 
@@ -265,6 +269,12 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
 
 # ----------Stopping----------
 def stop(puzzle,FinalSoln):
+    """
+    checks if we should stop. If found_solution is 1, we have a solution. If it is 0, we don't.
+    :param puzzle:
+    :param FinalSoln:
+    :return:
+    """
     found_solution = 1
     for clause in puzzle:
         clause_sat = 0
@@ -280,8 +290,17 @@ def stop(puzzle,FinalSoln):
 
 # ----------Main----------
 def SAT(heuristic_switch, puzzle):
+    """
+    :param heuristic_switch:
+    :param puzzle:
+    :return:
+    """
     # To initialize 'blank' soln
+    chosen_list = []
+    puzzle_history = {}
+    FinalSoln_history = {}
     FinalSoln = {}
+
     for i in puzzle:
         for j in i:
             FinalSoln[abs(j)] = 0  # They are initialized as 0, true is 1 and false is -1
@@ -301,17 +320,14 @@ def SAT(heuristic_switch, puzzle):
 
     FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
     stop_check = stop(puzzle, FinalSoln)
-    #if stop_check ==1:
-        #print(FinalSoln)
+    if stop_check == 0:
+        print('back tracking necessary')
 
     tautology_switch = 0
     pure_switch = 0
 
     a=1
     while stop_check == 0:
-        chosen_list = []
-        puzzle_history = {}
-        FinalSoln_history = {}
         FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
                                                                                                 puzzle, FinalSoln_history,
                                                                                                 puzzle_history, chosen_list,
@@ -320,19 +336,18 @@ def SAT(heuristic_switch, puzzle):
             stop_check = -1
         FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
         stop_check = stop(puzzle, FinalSoln)
-        #if stop_check == 1:
-            #print(FinalSoln)
 
         #print('iter',a)
         a +=1
     return FinalSoln
 
 # To initialize our problem
-myRulesList = readDIMACS('sudoku-rules.txt')
-for i in range(1,91):
+for i in range(1,50):
+    myRulesList = readDIMACS('sudoku-rules.txt')
+    puzzle = []
     start = time.time()
-    myPuzzle = readDIMACS('top91.sdk.txt', i)
+    myPuzzle = readDIMACS('1000 sudokus.txt', i)
     puzzle = myRulesList + myPuzzle
-    sol = SAT(3,puzzle)
+    sol = SAT(1,puzzle)
     end = time.time()
     print(end - start)

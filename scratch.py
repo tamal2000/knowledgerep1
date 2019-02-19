@@ -1,74 +1,82 @@
-def JW_onesided(myPuzzle, potentialVarsList):
-
+def readDIMACS(filename,sudokuNum=None):
     """
-    :param myPuzzle: The list of rules you're trying to solve
-    :param potentialVarsList: List of variables we can select from
-    :return: selectedVar
-    """
+    convert DIMACS file into list of numbers. There's an if-else statement that acts as a switch to see whether
+    you're inputting a list of rules OR the non-DIMACS version of Sudoku puzzle. If it's a non-DIMACS Sudoku puzzle,
+    it call the function getMySudoku(filename, sudokuNum).
 
-    # Initializing dictionary of potentialVariable: variableWeight from a list of possible variables
-    varWeights = {}
-    for myVar in potentialVarsList:
-        varWeights[myVar] = 0
-
-    # Search the entire puzzle for all occurrences of variable
-    for clause in myPuzzle:
-        # Checks to see the clause contains
-        for puzzleVar in clause:
-            # checks to see if any variables from potentialVarsList are in that specific clause of the puzzle
-            # if so, update the varweight using the JW formula
-            if (puzzleVar in potentialVarsList) == True:
-                varWeights[abs(puzzleVar)] += 2**(-1*len(clause))
-
-    # Following part addresses scenario in which several vars share the maximum weight
-    # Will build a list of all vars with max value, then randomly select a var to be returned
-    maxVal = max(varWeights.values())
-    selectionList = []
-    for myVar, myVarWeight in varWeights.items():
-        if myVarWeight == maxVal:
-            selectionList.append(myVar)
-    selectedVar = random.choice(selectionList)
-
-    return selectedVar
-
-def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
-    """
-    Counts the number of occurrences of literal l in unsatisfied clauses. Returns l with highest count.
-
-    :param myPuzzle: The current state of the puzzle.
-    :param potentialVarsList: List of variables to consider for selection
-    :param currentSoln:The assigned truth values for all variables in entire puzzle.
-
-    :return: selectedVar: The variable (from potentialVarsList) that yields the most unsatisfied clauses.
+    :param filename:
+    :return: list
     """
 
-    # Initializing dictionary of potentialVariable: variableWeight from a list of possible variables
-    varWeights = {}
-    for myVar in potentialVarsList:
-        varWeights[myVar] = 0
+    # Processes the rules List
+    if sudokuNum == None:
+        myList = []
+        f = open(filename, "r")
+        for line in f:
+            line = line.split()
+            # Use 'try' and 'except' to skip over any non-integer lists
+            try:
+                line = list(map(int, line))
+                line = line[0:len(line) - 1]  # removes zero from the end of each line
+                myList.append(line)
+            except:
+                pass
+    # Pulls a DIMACS version of the Sudoku list and outputs it in same format as Sudoku rules (so you can concatonate the
+    # two list later on)
+    else:
+        myList = []
+        DIMACS_Lines = getMySudoku(filename, sudokuNum)
+        for index in range(len(DIMACS_Lines)):
+            makelineList = []
+            line = DIMACS_Lines[index]
+            #line = list(map(int, line))
+            line = line[0:len(line) - 2]  # removes zero AND whitespace from the end of each line
+            line = int(line)
+            makelineList.append(line)
+            myList.append(makelineList)
+    return myList
 
-    for clause in myPuzzle:
-        # converts list of clauseVars to list of truth assignments
-        clauseValues = []
-        for myVar in clause:
-            if myVar >= 0:
-                clauseValues.append(currentSoln[abs(myVar)])
-            # Calculates the negation for a particular var
-            else:
-                clauseValues.append(-1 * currentSoln[abs(myVar)])
-        # if clause not satisfied, then check to see if variables from varList are in it
-        if (1 in clauseValues) == False:
-            for myVar in potentialVarsList:
-                if (myVar in clause) == True:
-                    varWeights[myVar] += 1
+def getMySudoku(filename, sudokuNum):
+    """
+    :param filename: The filename of mega-Sudoku text file.
+    :param sudokuNum: The number of the Sudoku puzzle you want to retrieve. sudokuNum ranges from 0 to len(filename)/81.
+    If the Sudoku puzzle number supplied is out of bounds, you'll recieve an error message.
 
-    # Selects variable with highest occurrence of unsatisified clauses.
-    # If there's a tie, one variable is randomly selected.
-    maxVal = max(varWeights.values())
-    selectionList = []
-    for myVar, myVarWeight in varWeights.items():
-        if myVarWeight == maxVal:
-            selectionList.append(myVar)
-    selectedVar = random.choice(selectionList)
+    :return: 0 : Returns a list of DIMACS lines to be processed in the readDIMACS function
+    """
 
-    return selectedVar
+    # Opening the mega-Sudoku file as a single string of text
+    with open(filename, "r") as myfile:
+        fileText = myfile.read()
+    # Splitting the file into the Sodoku puzzle you want
+    """
+    For some reason, there are random '\n' in text file...if you don't remove them, the file won't be parsed correctly....
+    It took me an hour to figure out that was the problem. Though, I don't fully understand why, so if you're feeling
+    extra motivated, you can look it over.
+    """
+    fileText = fileText.replace("\n", "")
+    if len( fileText)/81 >=  sudokuNum:
+        puzzle = fileText[sudokuNum*81 : sudokuNum*81 + 81]
+
+
+        # Convert flat list into ordered list to access numbers
+        puzzleRows = [puzzle[i:i+9] for i in range(0, len(puzzle), 9)]
+        # Then use ordered list to extract (Row,Col,GridValue) and output DIMACS file
+        DIMACS_lines = []
+        for index in range(len(puzzleRows)):
+            puzzleRows[index] = list(puzzleRows[index])
+            for gridIndex, gridValue in enumerate(puzzleRows[index]):
+                if gridValue != '.':
+                    DIMACS_line = str(index+1)+str(gridIndex) + str(gridValue) + str(' 0')
+                    DIMACS_lines.append(DIMACS_line)
+    else:
+        print("Error. Puzzle doesn't exist. Try inputting a smaller, non-negative number.")
+
+    return DIMACS_lines
+
+
+
+if readDIMACS('1000 sudokus.txt', 100) != readDIMACS('1000 sudokus.txt', 900):
+    print('they are not equal')
+
+
