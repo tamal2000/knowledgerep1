@@ -1,5 +1,6 @@
 import random
 import time
+from copy import deepcopy
 
 def readDIMACS(filename,sudokuNum=None):
     """
@@ -70,13 +71,17 @@ def getMySudoku(filename, sudokuNum):
             puzzleRows[index] = list(puzzleRows[index])
             for gridIndex, gridValue in enumerate(puzzleRows[index]):
                 if gridValue != '.':
-                    DIMACS_line = str(index+1)+str(gridIndex) + str(gridValue) + str(' 0')
+                    DIMACS_line = str(index+1)+str(gridIndex+1) + str(gridValue) + str(' 0')
                     DIMACS_lines.append(DIMACS_line)
     else:
         print("Error. Puzzle doesn't exist. Try inputting a smaller, non-negative number.")
 
     return DIMACS_lines
 
+
+# Inconsistent puzzles: 12, 16, 20, 22, 23, 24, 27, 30 from the 1,000 Sudoku
+# myPuzzle = readDIMACS('top91.sdk.txt', 0)
+# print(myPuzzle)
 # ----------Heuristics--------------
 def JW_onesided(myPuzzle, potentialVarsList):
 
@@ -182,13 +187,19 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                         stop_simplifying_check = 0
                 # unit clause
                 if unit_switch == 1:
-                    if len(clause) == 1:
+                    if len(clause) == 1 and FinalSoln[abs(var)] == 0:
                         if var < 0:
                             FinalSoln[abs(var)] = -1
                         else:
                             FinalSoln[var] = 1
                         clause_remove_check = 1
                         stop_simplifying_check = 0
+                    if len(clause) == 1 and FinalSoln[abs(var)]*var > 0:
+                        clause_remove_check = 1
+                        stop_simplifying_check = 0
+                    if len(clause) == 1 and FinalSoln[abs(var)]*var < 0:
+                        is_inconsistent = 1
+                        stop_simplifying_check = 1
                 # pure
                 if pure_switch == 1:
                     var_list.append(var)
@@ -206,23 +217,19 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                         FinalSoln[var] = 1
         # omitting the assigned variables from clauses and empty clauses
         for clause in puzzle:
+            for var in clause:
+                if FinalSoln[abs(var)] != 0:
+                    if FinalSoln[abs(var)]*var > 0: #remove satisfied clause
+                        puzzle.remove(clause)
+                        stop_simplifying_check = 0
+                        break
+                    else:   #romoves assigned variable form clause
+                        clause.remove(var)
+                        stop_simplifying_check = 0
             if len(clause) == 0:
-                puzzle.remove(clause)
-                stop_simplifying_check = 0
-            else:
-                for var in clause:
-                    if FinalSoln[abs(var)] != 0:
-                        if FinalSoln[abs(var)]*var > 0: #remove satisfied clause
-                            puzzle.remove(clause)
-                            stop_simplifying_check = 0
-                            break
-                        else:   #romoves assigned variable form clause
-                            if len(clause) != 1:
-                                clause.remove(var)
-                                stop_simplifying_check = 0
-                            if len(clause) == 1:
-                                is_inconsistent = 1
-                                stop_simplifying_check = 1
+                is_inconsistent = 1
+                stop_simplifying_check = 1
+                break
 
     return FinalSoln, puzzle, is_inconsistent
 
@@ -249,7 +256,7 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
             vars_to_split.append(var)
 
     backtrack_to = 0    # backtrack_to =0: there is nothing to backtrack to, another variable is chosen in the same branch
-    if len(vars_to_split) == 0 or is_inconsistent == 1: # no split options left, have to back track, or reached inconsistency
+    if is_inconsistent == 1: # no split options left, have to back track, or reached inconsistency
         for var in reversed(chosen_list):
             if FinalSoln[abs(var)] == 1:
                 puzzle = puzzle_history[var]
@@ -257,18 +264,20 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
                 FinalSoln[var] = -1
                 backtrack_to = var
                 break
-        if backtrack_to == 0:
-            backtrack_to = -1   # the puzzle is inconsistent
-            print('The puzzle is inconsistent.')
-    else:
+            chosen_list.remove(var)
+        if len(chosen_list) == 0:
+            print('the puzzle is inconsistent')
+            backtrack_to = None
+
+    if len(vars_to_split) != 0 and is_inconsistent == 0:
         if Heuristic == 'random':
             split_var = random.choice(vars_to_split)
         if Heuristic == 'JW_onesided':
             split_var = JW_onesided(puzzle, vars_to_split)
         if Heuristic == 'DLIS':
             split_var = DLIS(puzzle, vars_to_split, FinalSoln)
-        puzzle_history[split_var] = puzzle.copy()
-        FinalSoln_history[split_var] = FinalSoln.copy()
+        puzzle_history[split_var] = deepcopy(puzzle)
+        FinalSoln_history[split_var] = deepcopy(FinalSoln) #FinalSoln[:]
         FinalSoln[split_var] = 1
         chosen_list.append(split_var)
 
@@ -291,8 +300,6 @@ def stop(puzzle,FinalSoln):
             if FinalSoln[abs(var)]*var > 0:
                 clause_sat = 1
         if clause_sat == 0:
-            for var in clause:
-                print('clause', clause, 'var', var, 'value', FinalSoln[abs(var)])
             found_solution = 0
             break
     return found_solution
@@ -331,8 +338,6 @@ def SAT(heuristic_switch, puzzle):
 
     FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
     stop_check = stop(puzzle, FinalSoln)
-    # if stop_check == 0:
-    #     print('back tracking necessary')
 
     tautology_switch = 0
     pure_switch = 0
@@ -343,31 +348,30 @@ def SAT(heuristic_switch, puzzle):
                                                                                                 puzzle, FinalSoln_history,
                                                                                                 puzzle_history, chosen_list,
                                                                                                 Heuristic,is_inconsistent)
-        if backtrack_to == -1:  # the problem is inconsistent
-            stop_check = -1
+
+        #print(chosen_list)
+
         FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
         stop_check = stop(puzzle, FinalSoln)
-        if stop_check ==1:
-            print(a)
+        # if stop_check ==1:
+        #     print(a)
 
-        #print('iter',a)
+        if backtrack_to is None:
+            stop_check = 1
+
+        # print('iter',a)
         a +=1
     return FinalSoln
 
 # To initialize our problem
-for i in range(1,2):
+for i in range(1,50):
     myRulesList = readDIMACS('sudoku-rules.txt')
     puzzle = []
+
     start = time.time()
-    myPuzzle = readDIMACS('1000 sudokus.txt', i)
+    myPuzzle = readDIMACS('top91.sdk.txt',i)
     puzzle = myRulesList + myPuzzle
     sol = SAT(2,puzzle)
-
-    myRulesList = readDIMACS('sudoku-rules.txt')
-    puzzle = []
-    start = time.time()
-    myPuzzle = readDIMACS('1000 sudokus.txt', i)
-    puzzle = myRulesList + myPuzzle
-    print(stop(puzzle,sol))
     end = time.time()
+
     print(end - start)
