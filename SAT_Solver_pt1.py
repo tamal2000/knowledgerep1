@@ -168,15 +168,17 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
     """
 
     stop_simplifying_check = 0
-    while stop_simplifying_check == 0:   #stops when nothing has changed in the last simplification
+    is_inconsistent = 0
+    while stop_simplifying_check == 0:   # stops when nothing has changed in the last simplification
         stop_simplifying_check = 1
         var_list = []   # for pure literal simplification
         for clause in puzzle:
+            clause_remove_check = 0 # checks if the clause can be removed due to any of the simplification rules
             for var in clause:
                 # tautology
                 if tautology_switch == 1:
                     if -1 * var in clause:
-                        puzzle.remove(clause)
+                        clause_remove_check = 1
                         stop_simplifying_check = 0
                 # unit clause
                 if unit_switch == 1:
@@ -185,11 +187,14 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                             FinalSoln[abs(var)] = -1
                         else:
                             FinalSoln[var] = 1
-                        puzzle.remove(clause)
+                        clause_remove_check = 1
                         stop_simplifying_check = 0
                 # pure
                 if pure_switch == 1:
                     var_list.append(var)
+
+            if clause_remove_check == 1:
+                puzzle.remove(clause)
 
         if pure_switch == 1:
             for var in var_list:
@@ -212,13 +217,17 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                             stop_simplifying_check = 0
                             break
                         else:   #romoves assigned variable form clause
-                            clause.remove(var)
-                            stop_simplifying_check = 0
+                            if len(clause) != 1:
+                                clause.remove(var)
+                                stop_simplifying_check = 0
+                            if len(clause) == 1:
+                                is_inconsistent = 1
+                                stop_simplifying_check = 1
 
-    return FinalSoln, puzzle
+    return FinalSoln, puzzle, is_inconsistent
 
 # ----------Splitting----------
-def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heuristic):
+def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heuristic, is_inconsistent):
     """
     gets the puzzle and solution and both their histories and the list of variables that were chosen for spiltting
     before. It checks for unassigned variables and adds them to vars_to_split. If there was no var to split, it
@@ -240,9 +249,9 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
             vars_to_split.append(var)
 
     backtrack_to = 0    # backtrack_to =0: there is nothing to backtrack to, another variable is chosen in the same branch
-    if len(vars_to_split) == 0: # no split options left, have to back track
+    if len(vars_to_split) == 0 or is_inconsistent == 1: # no split options left, have to back track, or reached inconsistency
         for var in reversed(chosen_list):
-            if FinalSoln[var] == 1:
+            if FinalSoln[abs(var)] == 1:
                 puzzle = puzzle_history[var]
                 FinalSoln = FinalSoln_history[var]
                 FinalSoln[var] = -1
@@ -279,9 +288,11 @@ def stop(puzzle,FinalSoln):
     for clause in puzzle:
         clause_sat = 0
         for var in clause:
-            if FinalSoln[abs(var)] == 1:
+            if FinalSoln[abs(var)]*var > 0:
                 clause_sat = 1
         if clause_sat == 0:
+            for var in clause:
+                print('clause', clause, 'var', var, 'value', FinalSoln[abs(var)])
             found_solution = 0
             break
     return found_solution
@@ -318,10 +329,10 @@ def SAT(heuristic_switch, puzzle):
     pure_switch = 0
     unit_switch = 1
 
-    FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
+    FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
     stop_check = stop(puzzle, FinalSoln)
-    if stop_check == 0:
-        print('back tracking necessary')
+    # if stop_check == 0:
+    #     print('back tracking necessary')
 
     tautology_switch = 0
     pure_switch = 0
@@ -331,23 +342,32 @@ def SAT(heuristic_switch, puzzle):
         FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
                                                                                                 puzzle, FinalSoln_history,
                                                                                                 puzzle_history, chosen_list,
-                                                                                                Heuristic)
+                                                                                                Heuristic,is_inconsistent)
         if backtrack_to == -1:  # the problem is inconsistent
             stop_check = -1
-        FinalSoln, puzzle = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
+        FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
         stop_check = stop(puzzle, FinalSoln)
+        if stop_check ==1:
+            print(a)
 
         #print('iter',a)
         a +=1
     return FinalSoln
 
 # To initialize our problem
-for i in range(1,50):
+for i in range(1,2):
     myRulesList = readDIMACS('sudoku-rules.txt')
     puzzle = []
     start = time.time()
     myPuzzle = readDIMACS('1000 sudokus.txt', i)
     puzzle = myRulesList + myPuzzle
-    sol = SAT(1,puzzle)
+    sol = SAT(2,puzzle)
+
+    myRulesList = readDIMACS('sudoku-rules.txt')
+    puzzle = []
+    start = time.time()
+    myPuzzle = readDIMACS('1000 sudokus.txt', i)
+    puzzle = myRulesList + myPuzzle
+    print(stop(puzzle,sol))
     end = time.time()
     print(end - start)
