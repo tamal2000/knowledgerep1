@@ -1,4 +1,6 @@
 import json
+import random
+from copy import deepcopy
 
 def readDIMACS(filename,sudokuNum=None):
     """
@@ -125,8 +127,8 @@ def createMyBenchmarks(fileNamesList, desiredVarNum):
     return 0
 
 fileNames = ['top91.sdk.txt', '1000_sudokus.txt']
-# Only run line of code below once. (Otherwise, you're just overwriting the results for the same file.)
-# createMyBenchmarks(fileNames, 24)
+# Only run the line below ONCE. (Otherwise, you're just overwriting the results for the same file.)
+createMyBenchmarks(fileNames, 24)
 
 # How to open the text file as a dictionary
 with open('benchmarks.txt') as f:
@@ -134,5 +136,18 @@ with open('benchmarks.txt') as f:
 print(myBenchmarks)
 
 # ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
+""" This wasn't worth rewriting as a function. It's just two lines of code. I figured you could just
+incorporate into the main body of code."""
 
-# TODO: Write a function that randomly deletes one variable from the DIMACS line 
+# Test puzzle to make sure it works
+myPuzzle = readDIMACS('1000 sudokus.txt', 0)
+# Make a deep copy, otherwise you'll be modifying the original puzzle!
+NewPuzzle = deepcopy(myPuzzle)
+
+# Line of code that randomly removes element from, and the test to see if list is an element shorter.
+print(len(NewPuzzle))
+NewPuzzle.pop(random.randrange(len(NewPuzzle)))
+print(len(NewPuzzle))
+
+
+
