@@ -428,8 +428,8 @@ def SAT(heuristic_switch, metric_switch, puzzle):
 
     return FinalSoln, metric
 
-def main(dict_of_indexes, num_solutions):
-    heuristic_switch = 1
+def main(dict_of_indexes, num_solutions,pop_var_switch):
+    heuristic_switch = 2
     metric_switch = '#backtracks'
 
     time_history = {}
@@ -439,21 +439,32 @@ def main(dict_of_indexes, num_solutions):
             myRulesList = readDIMACS('sudoku-rules.txt')
             puzzle = []
             myPuzzle = readDIMACS(filename, index)
+
+            if pop_var_switch == 1:
+                myPuzzle.pop(random.randrange(len(myPuzzle)))
+                NewPuzzle = deepcopy(myPuzzle)
+
             puzzle = myRulesList + myPuzzle
 
             start = time.time()
             sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
             end = time.time()
 
-            time_history[filename,index] = [end-start]
-            metric_history[filename,index] = [metric]
+            time_history[filename + str(index)] = [end-start]
+            metric_history[filename + str(index)] = [metric]
             print(end - start)
-
+            
             if num_solutions > 1:
                 for i in range(num_solutions-1):
                     myRulesList = readDIMACS('sudoku-rules.txt')
                     puzzle = []
-                    myPuzzle = readDIMACS(filename, index)
+
+                    if pop_var_switch == 1:
+                        myPuzzle = NewPuzzle
+                        NewPuzzle = deepcopy(myPuzzle)
+                    else:
+                        myPuzzle = readDIMACS(filename, index)
+
                     inverse_sol = []
                     for var in sol:
                         inverse_sol.append(var*sol[var]*-1)
@@ -470,7 +481,7 @@ def main(dict_of_indexes, num_solutions):
                         time_history[filename, index].append(None)
                         metric_history[filename, index].append(None)
                         break
-
+                    print(metric_history[filename,index])
     return time_history, metric_history
 
 # --------------------------- Creating benchmarks, only run once ---------------------------
@@ -487,10 +498,8 @@ incorporate into the main body of code."""
 # # Make a deep copy, otherwise you'll be modifying the original puzzle!
 # NewPuzzle = deepcopy(myPuzzle)
 #
-# # Line of code that randomly removes element from, and the test to see if list is an element shorter.
-# print(len(NewPuzzle))
-# NewPuzzle.pop(random.randrange(len(NewPuzzle)))
-# print(len(NewPuzzle))
+# Line of code that randomly removes element from, and the test to see if list is an element shorter.
+#NewPuzzle.pop(random.randrange(len(NewPuzzle)))
 
 
 # How to open the text file as a dictionary
@@ -498,5 +507,10 @@ with open('benchmarks.txt') as f:
     myBenchmarks = json.load(f)
 print(myBenchmarks)
 
-time_history, metric_history = main(myBenchmarks, 2)
+time_history, metric_history = main(myBenchmarks, 1,0)
 
+# Writing histories to hard drive as a text file
+with open('time_history.txt', 'w') as file:
+    file.write(json.dumps(time_history))
+with open('metric_history.txt', 'w') as file:
+    file.write(json.dumps(metric_history))
