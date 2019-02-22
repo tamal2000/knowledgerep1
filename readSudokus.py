@@ -1,3 +1,5 @@
+import json
+
 def readDIMACS(filename,sudokuNum=None):
     """
     convert DIMACS file into list of numbers. There's an if-else statement that acts as a switch to see whether
@@ -74,25 +76,54 @@ def getMySudoku(filename, sudokuNum):
 
     return DIMACS_lines
 
-# ---------------------------To get all puzzles with x numbers of variables -------------------------------------------
-# TODO Convert this code into function with inputs: (filename , VarNum)
-# TODO Function needs to return: (filename, sudokuIDsList)
-# myPuzzle = readDIMACS('top91.sdk.txt', 0)
-filename = 'top91.sdk.txt'
+# ---------------------To get all puzzles with x numbers of variables as a dictionary----------------------------------
 
-# Opens file and automatically calculates the total number of Sudoku puzzles that the file contains
-with open(filename, "r") as myfile:
-    fileText = myfile.read()
-fileText = fileText.replace("\n", "")
-totPuzzleNum = int(len(fileText) / 81)
-print(totPuzzleNum )
-# Look through readDIMACS() of entire file
-SavedPuzzleIDs = []
-for i in range(0, totPuzzleNum):
-    myPuzzle = readDIMACS('top91.sdk.txt', i)
-    if len(myPuzzle) == 17:
-        SavedPuzzleIDs.append(i)
-print(SavedPuzzleIDs)
+def findSudokuByVarNum(filename, varNum=17):
+
+    """
+    :param filename: Sudoku file name that you wanted to search
+    :param varNum: The numbers of variables that you're searching for. (Default value is 17).
+    :return: List of puzzleID of all puzzles that satisfies varNum condition
+    """
+
+    # Opens file and automatically calculates the total number of Sudoku puzzles that the file contains
+    with open(filename, "r") as myfile:
+        fileText = myfile.read()
+    fileText = fileText.replace("\n", "")
+    totPuzzleNum = int(len(fileText) / 81)
+
+
+    # Look through readDIMACS() of entire file
+    SavedPuzzleIDs = []
+    for i in range(0, totPuzzleNum):
+        myPuzzle = readDIMACS(filename, i)
+        if len(myPuzzle) == varNum:
+            SavedPuzzleIDs.append(i)
+
+    return SavedPuzzleIDs
+
+# Building a dictionary for all puzzles of X-variables long as {fileFoundIn: [sudokuPuzzleIDs]}
+fileNames = ['top91.sdk.txt', '1000_sudokus.txt']
+benchmarkSudokos = {}
+for myFile in fileNames:
+    # I chose 24 as a test, since both test files I have had 24 variable-long puzzles. Change back to 17 if you want to.
+    foundSudokuMatches = findSudokuByVarNum(myFile, 24)
+    benchmarkSudokos[myFile] = foundSudokuMatches
+
+
+
+
+# Writing file to hard drive
+#with open('benchmarks.txt', 'w') as file:
+    #file.write(json.dumps(benchmarkSudokos))
+
+with open('benchmarks.txt') as f:
+    a = json.load(f)
+print(a)
+
+
+
+
 
 # TODO once complete function, find a way to build filename, sudokuIDsList into dictionary of {filename : sudokuIDsList}
 # TODO save output as a dictionary file onto hard drive and check that it can be read
