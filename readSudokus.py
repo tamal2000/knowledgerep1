@@ -74,7 +74,31 @@ def getMySudoku(filename, sudokuNum):
 
     return DIMACS_lines
 
+# ---------------------------To get all puzzles with x numbers of variables -------------------------------------------
+# TODO Convert this code into function with inputs: (filename , VarNum)
+# TODO Function needs to return: (filename, sudokuIDsList)
+# myPuzzle = readDIMACS('top91.sdk.txt', 0)
+filename = 'top91.sdk.txt'
 
-# Inconsistent puzzles: 12, 16, 20, 22, 23, 24, 27, 30 from the 1,000 Sudoku
-myPuzzle = readDIMACS('1000 sudokus.txt', 1010)
-print(myPuzzle)
+# Opens file and automatically calculates the total number of Sudoku puzzles that the file contains
+with open(filename, "r") as myfile:
+    fileText = myfile.read()
+fileText = fileText.replace("\n", "")
+totPuzzleNum = int(len(fileText) / 81)
+print(totPuzzleNum )
+# Look through readDIMACS() of entire file
+SavedPuzzleIDs = []
+for i in range(0, totPuzzleNum):
+    myPuzzle = readDIMACS('top91.sdk.txt', i)
+    if len(myPuzzle) == 17:
+        SavedPuzzleIDs.append(i)
+print(SavedPuzzleIDs)
+
+# TODO once complete function, find a way to build filename, sudokuIDsList into dictionary of {filename : sudokuIDsList}
+# TODO save output as a dictionary file onto hard drive and check that it can be read
+
+
+
+
+# ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
+

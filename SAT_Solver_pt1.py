@@ -364,14 +364,14 @@ def SAT(heuristic_switch, puzzle):
     return FinalSoln
 
 # To initialize our problem
-for i in range(1,50):
+for i in range(1,91):
     myRulesList = readDIMACS('sudoku-rules.txt')
     puzzle = []
 
     start = time.time()
     myPuzzle = readDIMACS('top91.sdk.txt',i)
-    puzzle = myRulesList + myPuzzle
-    sol = SAT(2,puzzle)
+    #puzzle = myRulesList + myPuzzle
+    #sol = SAT(2,puzzle)
     end = time.time()
 
-    print(end - start)
+    print(len(myPuzzle))

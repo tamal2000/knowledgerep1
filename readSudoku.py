@@ -67,14 +67,15 @@ def getMySudoku(filename, sudokuNum):
             puzzleRows[index] = list(puzzleRows[index])
             for gridIndex, gridValue in enumerate(puzzleRows[index]):
                 if gridValue != '.':
-                    DIMACS_line = str(index+1)+str(gridIndex+1) + str(gridValue) + str(' 0')
+                    DIMACS_line = str(index+1)+str(gridIndex) + str(gridValue) + str(' 0')
                     DIMACS_lines.append(DIMACS_line)
     else:
         print("Error. Puzzle doesn't exist. Try inputting a smaller, non-negative number.")
 
     return DIMACS_lines
 
-
-# Inconsistent puzzles: 12, 16, 20, 22, 23, 24, 27, 30 from the 1,000 Sudoku
-myPuzzle = readDIMACS('1000 sudokus.txt', 1010)
-print(myPuzzle)
+myRulesList = readDIMACS('sudoku-rules.txt')
+Puzzle0 = readDIMACS('sudoku-example.txt')
+Puzzle1 = readDIMACS('1000_sudokus.txt', 999)
+# A check to see that the new/modified functions output the puzzle the same way as our example Puzzle was outputted
+# originally.
