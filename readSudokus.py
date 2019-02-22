@@ -102,34 +102,37 @@ def findSudokuByVarNum(filename, varNum=17):
 
     return SavedPuzzleIDs
 
-# Building a dictionary for all puzzles of X-variables long as {fileFoundIn: [sudokuPuzzleIDs]}
+def createMyBenchmarks(fileNamesList, desiredVarNum):
+    """
+    Call the function findSudokuByVarNum( ) for each file passed, and converts the output from that function into
+    text file containing a dictionary. This function is meant to only run once.
+
+    :param fileNamesList: list of file names
+    :param desiredVarNum: how many variables you want your Sudoku puzzle to contain
+    :return: 0
+    """
+    # Building a dictionary for all puzzles of X-variables long as {fileFoundIn: [sudokuPuzzleIDs]}
+    benchmarkSudokos = {}
+    for myFile in fileNamesList:
+        # I chose 24 as a test, since both test files I have had 24 variable-long puzzles. Change back to 17 if you want to.
+        foundSudokuMatches = findSudokuByVarNum(myFile, desiredVarNum)
+        benchmarkSudokos[myFile] = foundSudokuMatches
+
+    # Writing dictionary to hard drive as a text file
+    with open('benchmarks.txt', 'w') as file:
+        file.write(json.dumps(benchmarkSudokos))
+
+    return 0
+
 fileNames = ['top91.sdk.txt', '1000_sudokus.txt']
-benchmarkSudokos = {}
-for myFile in fileNames:
-    # I chose 24 as a test, since both test files I have had 24 variable-long puzzles. Change back to 17 if you want to.
-    foundSudokuMatches = findSudokuByVarNum(myFile, 24)
-    benchmarkSudokos[myFile] = foundSudokuMatches
+# Only run line of code below once. (Otherwise, you're just overwriting the results for the same file.)
+# createMyBenchmarks(fileNames, 24)
 
-
-
-
-# Writing file to hard drive
-#with open('benchmarks.txt', 'w') as file:
-    #file.write(json.dumps(benchmarkSudokos))
-
+# How to open the text file as a dictionary
 with open('benchmarks.txt') as f:
-    a = json.load(f)
-print(a)
-
-
-
-
-
-# TODO once complete function, find a way to build filename, sudokuIDsList into dictionary of {filename : sudokuIDsList}
-# TODO save output as a dictionary file onto hard drive and check that it can be read
-
-
-
+    myBenchmarks = json.load(f)
+print(myBenchmarks)
 
 # ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
 
+# TODO: Write a function that randomly deletes one variable from the DIMACS line 
