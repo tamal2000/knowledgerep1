@@ -149,7 +149,7 @@ def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
 
     # Selects variable with highest occurrence of unsatisified clauses.
     # If there's a tie, one variable is randomly selected.
-    maxVal = max(varWeights.values())
+    maxVal = min(varWeights.values())
     selectionList = []
     for myVar, myVarWeight in varWeights.items():
         if myVarWeight == maxVal:
