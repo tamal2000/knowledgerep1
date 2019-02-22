@@ -1,6 +1,7 @@
 import random
 import time
 from copy import deepcopy
+import json
 
 def readDIMACS(filename,sudokuNum=None):
     """
@@ -78,10 +79,54 @@ def getMySudoku(filename, sudokuNum):
 
     return DIMACS_lines
 
+# ---------------------To get all puzzles with x numbers of variables as a dictionary----------------------------------
 
-# Inconsistent puzzles: 12, 16, 20, 22, 23, 24, 27, 30 from the 1,000 Sudoku
-# myPuzzle = readDIMACS('top91.sdk.txt', 0)
-# print(myPuzzle)
+def findSudokuByVarNum(filename, varNum=17):
+
+    """
+    :param filename: Sudoku file name that you wanted to search
+    :param varNum: The numbers of variables that you're searching for. (Default value is 17).
+    :return: List of puzzleID of all puzzles that satisfies varNum condition
+    """
+
+    # Opens file and automatically calculates the total number of Sudoku puzzles that the file contains
+    with open(filename, "r") as myfile:
+        fileText = myfile.read()
+    fileText = fileText.replace("\n", "")
+    totPuzzleNum = int(len(fileText) / 81)
+
+
+    # Look through readDIMACS() of entire file
+    SavedPuzzleIDs = []
+    for i in range(0, totPuzzleNum):
+        myPuzzle = readDIMACS(filename, i)
+        if len(myPuzzle) == varNum:
+            SavedPuzzleIDs.append(i)
+
+    return SavedPuzzleIDs
+
+def createMyBenchmarks(fileNamesList, desiredVarNum):
+    """
+    Call the function findSudokuByVarNum( ) for each file passed, and converts the output from that function into
+    text file containing a dictionary. This function is meant to only run once.
+
+    :param fileNamesList: list of file names
+    :param desiredVarNum: how many variables you want your Sudoku puzzle to contain
+    :return: 0
+    """
+    # Building a dictionary for all puzzles of X-variables long as {fileFoundIn: [sudokuPuzzleIDs]}
+    benchmarkSudokos = {}
+    for myFile in fileNamesList:
+        # I chose 24 as a test, since both test files I have had 24 variable-long puzzles. Change back to 17 if you want to.
+        foundSudokuMatches = findSudokuByVarNum(myFile, desiredVarNum)
+        benchmarkSudokos[myFile] = foundSudokuMatches
+
+    # Writing dictionary to hard drive as a text file
+    with open('benchmarks.txt', 'w') as file:
+        file.write(json.dumps(benchmarkSudokos))
+
+    return 0
+
 # ----------Heuristics--------------
 def JW_onesided(myPuzzle, potentialVarsList):
 
@@ -149,12 +194,12 @@ def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
 
     # Selects variable with highest occurrence of unsatisified clauses.
     # If there's a tie, one variable is randomly selected.
-    maxVal = max(varWeights.values())
-    selectionList = []
+    minVal = min(varWeights.values())
+    #selectionList = []
     for myVar, myVarWeight in varWeights.items():
-        if myVarWeight == maxVal:
-            selectionList.append(myVar)
-    selectedVar = random.choice(selectionList)
+        if myVarWeight == minVal:
+            selectedVar = myVar
+            break
 
     return selectedVar
 
@@ -247,7 +292,10 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
     :param puzzle_history:
     :param chosen_list: ordered list of all the variables that were splitted before
     :param Heuristic:
-    :return:
+    :return: FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to
+    backtrack_to : = 0 then splited
+                   = var then backtracked to var
+                   = None then the puzzle was inconsistent
     """
     # we can only split those that are not assigned yet
     vars_to_split = []
@@ -255,8 +303,8 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
         if FinalSoln[var] == 0:
             vars_to_split.append(var)
 
-    backtrack_to = 0    # backtrack_to =0: there is nothing to backtrack to, another variable is chosen in the same branch
-    if is_inconsistent == 1: # no split options left, have to back track, or reached inconsistency
+    backtrack_to = 0    # backtrack_to = 0: there is nothing to backtrack to, another variable is chosen in the same branch
+    if is_inconsistent == 1: # have to back track
         for var in reversed(chosen_list):
             if FinalSoln[abs(var)] == 1:
                 puzzle = puzzle_history[var]
@@ -280,8 +328,6 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
         FinalSoln_history[split_var] = deepcopy(FinalSoln) #FinalSoln[:]
         FinalSoln[split_var] = 1
         chosen_list.append(split_var)
-
-
 
     return FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to
 
@@ -307,22 +353,26 @@ def stop(puzzle,FinalSoln):
 
 
 # ----------Main----------
-def SAT(heuristic_switch, puzzle):
+def SAT(heuristic_switch, metric_switch, puzzle):
     """
     :param heuristic_switch:
+    :param metric_switch:
     :param puzzle:
     :return:
     """
-    # To initialize 'blank' soln
+
+    # To initialize 'blank' solution and histories
     chosen_list = []
     puzzle_history = {}
     FinalSoln_history = {}
+    backtrack_to_history = []
     FinalSoln = {}
 
     for i in puzzle:
         for j in i:
             FinalSoln[abs(j)] = 0  # They are initialized as 0, true is 1 and false is -1
 
+    # Heuristic switch
     if heuristic_switch == 1:
         Heuristic = 'random'
     elif heuristic_switch == 2:
@@ -331,6 +381,7 @@ def SAT(heuristic_switch, puzzle):
         Heuristic = 'JW_onesided'
     else:
         raise ValueError('Invalid Heuristic Switch')
+
 
     tautology_switch = 1
     pure_switch = 0
@@ -342,14 +393,14 @@ def SAT(heuristic_switch, puzzle):
     tautology_switch = 0
     pure_switch = 0
 
-    a=1
+    iter_counter = 1
     while stop_check == 0:
         FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
                                                                                                 puzzle, FinalSoln_history,
                                                                                                 puzzle_history, chosen_list,
                                                                                                 Heuristic,is_inconsistent)
 
-        #print(chosen_list)
+        backtrack_to_history.append(backtrack_to)   # for evaluating metrics for num of backtracks and num of splits
 
         FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
         stop_check = stop(puzzle, FinalSoln)
@@ -358,20 +409,94 @@ def SAT(heuristic_switch, puzzle):
 
         if backtrack_to is None:
             stop_check = 1
+            FinalSoln = None
 
-        # print('iter',a)
-        a +=1
-    return FinalSoln
+        # print('iter',iter_counter)
+        iter_counter += 1
 
-# To initialize our problem
-for i in range(1,50):
-    myRulesList = readDIMACS('sudoku-rules.txt')
-    puzzle = []
+    #metric switch
+    try:
+        backtrack_to_history.remove(None)
+    except:
+        pass
+    if metric_switch == '#splits':  #determined by number of nonezero and non-None values in backtrack_to_history
+        metric = backtrack_to_history.count(0)
+    elif metric_switch == '#backtracks':  #determined by number of nonezero and non-None values in backtrack_to_history
+        metric = len(backtrack_to_history) - backtrack_to_history.count(0)
+    else:
+        raise ValueError('Invalid metric Switch')
 
-    start = time.time()
-    myPuzzle = readDIMACS('top91.sdk.txt',i)
-    puzzle = myRulesList + myPuzzle
-    sol = SAT(2,puzzle)
-    end = time.time()
+    return FinalSoln, metric
 
-    print(end - start)
+def main(dict_of_indexes, num_solutions):
+    heuristic_switch = 1
+    metric_switch = '#backtracks'
+
+    time_history = {}
+    metric_history = {}
+    for filename in dict_of_indexes:
+        for index in dict_of_indexes[filename]:
+            myRulesList = readDIMACS('sudoku-rules.txt')
+            puzzle = []
+            myPuzzle = readDIMACS(filename, index)
+            puzzle = myRulesList + myPuzzle
+
+            start = time.time()
+            sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
+            end = time.time()
+
+            time_history[filename,index] = [end-start]
+            metric_history[filename,index] = [metric]
+            print(end - start)
+
+            if num_solutions > 1:
+                for i in range(num_solutions-1):
+                    myRulesList = readDIMACS('sudoku-rules.txt')
+                    puzzle = []
+                    myPuzzle = readDIMACS(filename, index)
+                    inverse_sol = []
+                    for var in sol:
+                        inverse_sol.append(var*sol[var]*-1)
+                    puzzle = myRulesList + myPuzzle + [inverse_sol]
+
+                    start = time.time()
+                    sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
+                    end = time.time()
+
+                    if sol != None:
+                        time_history[filename, index].append(end - start)
+                        metric_history[filename, index].append(metric)
+                    else:
+                        time_history[filename, index].append(None)
+                        metric_history[filename, index].append(None)
+                        break
+
+    return time_history, metric_history
+
+# --------------------------- Creating benchmarks, only run once ---------------------------
+fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
+# Only run the line below ONCE. (Otherwise, you're just overwriting the results for the same file.)
+#createMyBenchmarks(fileNames, 17)
+# ------------------------------------------------------------------------------------------
+# ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
+""" This wasn't worth rewriting as a function. It's just two lines of code. I figured you could just
+incorporate into the main body of code."""
+
+# # Test puzzle to make sure it works
+# myPuzzle = readDIMACS('1000 sudokus.txt', 0)
+# # Make a deep copy, otherwise you'll be modifying the original puzzle!
+# NewPuzzle = deepcopy(myPuzzle)
+#
+# # Line of code that randomly removes element from, and the test to see if list is an element shorter.
+# print(len(NewPuzzle))
+# NewPuzzle.pop(random.randrange(len(NewPuzzle)))
+# print(len(NewPuzzle))
+
+
+# How to open the text file as a dictionary
+with open('benchmarks.txt') as f:
+    myBenchmarks = json.load(f)
+print(myBenchmarks)
+
+time_history, metric_history = main(myBenchmarks, 2)
+
