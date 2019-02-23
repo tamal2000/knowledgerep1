@@ -487,7 +487,7 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
 # --------------------------- Creating benchmarks, only run once ---------------------------
 fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
 # Only run the line below ONCE. (Otherwise, you're just overwriting the results for the same file.)
-#createMyBenchmarks(fileNames, 17)
+createMyBenchmarks(fileNames, 17)
 # ------------------------------------------------------------------------------------------
 # ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
 """ This wasn't worth rewriting as a function. It's just two lines of code. I figured you could just
