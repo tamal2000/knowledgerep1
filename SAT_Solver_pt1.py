@@ -429,16 +429,21 @@ def SAT(heuristic_switch, metric_switch, puzzle):
 
     return FinalSoln, metric
 
-def main(dict_of_indexes, num_solutions,pop_var_switch):
+def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
     heuristic_switch = 2
-    metric_switch = '#backtracks'
+    metric_switch = '#splits'
+
+    if num_popped_vars>1 and num_solutions>1:
+        raise ValueError('You can either have multiple solutions or continue omitting vars from puzzle, not both.')
 
     time_history = {}
     metric_history = {}
     counter = 1
     for filename in dict_of_indexes:
-        if counter > 9:
-            break
+        #remove this part!!!!!!!!!!!!!!!!!!!!!!1
+        # if counter > 9:
+        #     break
+
         for index in dict_of_indexes[filename]:
 
             myRulesList = readDIMACS('sudoku-rules.txt')
@@ -482,9 +487,31 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
                         metric_history[filename + str(index)].append(None)
                         break
                     print(metric_history[filename + str(index)])
-            counter +=1
-            if counter > 9:
-                break
+
+            if num_popped_vars>1:
+                for i in range(num_popped_vars - 1):
+                    puzzle = newPuzzle
+                    puzzle.pop()
+                    newPuzzle = deepcopy(puzzle)
+
+                    start = time.time()
+                    sol2, metric = SAT(heuristic_switch, metric_switch, puzzle)
+                    end = time.time()
+                    sol = sol2
+
+                    if sol != None:
+                        time_history[filename + str(index)].append(end - start)
+                        metric_history[filename + str(index)].append(metric)
+                    else:
+                        time_history[filename + str(index)].append(None)
+                        metric_history[filename + str(index)].append(None)
+                        break
+                    print(metric_history[filename + str(index)])
+            #remove this part!!!!!!!!!!!!!!!!!!!!!!!!!
+            # counter +=1
+            # if counter > 9:
+            #     break
+
     return time_history, metric_history
 
 # --------------------------- Creating benchmarks, only run once ---------------------------
@@ -506,16 +533,16 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_SHard, metric_history_SHard = main(super_hard, 100,1)
+time_history_SHard, metric_history_SHard = main(super_hard, 1,1,5)
 
 # # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(metric_history_easy))
-with open('time_history_SHard.txt', 'w') as file:
+with open('time_history_popVars_SHard.txt', 'w') as file:
     file.write(json.dumps(time_history_SHard))
-with open('metric_history_SHard.txt', 'w') as file:
+with open('metric_history_popVars_SHard.txt', 'w') as file:
     file.write(json.dumps(metric_history_SHard))
 
 
