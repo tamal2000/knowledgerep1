@@ -533,7 +533,7 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_SHard, metric_history_SHard = main(super_hard, 1,1,5)
+time_history_SHard, metric_history_SHard = main(super_hard, 1,1,16)
 
 # # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
