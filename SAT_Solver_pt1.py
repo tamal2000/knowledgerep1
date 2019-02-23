@@ -2,6 +2,7 @@ import random
 import time
 from copy import deepcopy
 import json
+import re
 
 def readDIMACS(filename,sudokuNum=None):
     """
@@ -441,7 +442,7 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
             myPuzzle = readDIMACS(filename, index)
 
             if pop_var_switch == 1:
-                myPuzzle.pop(random.randrange(len(myPuzzle)))
+                myPuzzle.pop()
                 NewPuzzle = deepcopy(myPuzzle)
 
             puzzle = myRulesList + myPuzzle
@@ -485,32 +486,35 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
     return time_history, metric_history
 
 # --------------------------- Creating benchmarks, only run once ---------------------------
-fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
+#fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
 # Only run the line below ONCE. (Otherwise, you're just overwriting the results for the same file.)
-createMyBenchmarks(fileNames, 17)
+#createMyBenchmarks(fileNames, 17)
 # ------------------------------------------------------------------------------------------
-# ---------------------------Write a function that randomly delete one variable from DIMACS lines----------------------
-""" This wasn't worth rewriting as a function. It's just two lines of code. I figured you could just
-incorporate into the main body of code."""
-
-# # Test puzzle to make sure it works
-# myPuzzle = readDIMACS('1000 sudokus.txt', 0)
-# # Make a deep copy, otherwise you'll be modifying the original puzzle!
-# NewPuzzle = deepcopy(myPuzzle)
-#
-# Line of code that randomly removes element from, and the test to see if list is an element shorter.
-#NewPuzzle.pop(random.randrange(len(NewPuzzle)))
 
 
 # How to open the text file as a dictionary
 with open('benchmarks.txt') as f:
     myBenchmarks = json.load(f)
-print(myBenchmarks)
 
-time_history, metric_history = main(myBenchmarks, 1,0)
+with open('easy.txt') as f:
+    easy = json.load(f)
+print(easy)
+with open('super_hard.txt') as f:
+    super_hard = json.load(f)
+print(super_hard)
+
+# time_history_easy, metric_history_easy = main(easy, 10,1)
+time_history_SHard, metric_history_SHard = main(super_hard, 10,1)
 
 # Writing histories to hard drive as a text file
-with open('time_history.txt', 'w') as file:
-    file.write(json.dumps(time_history))
-with open('metric_history.txt', 'w') as file:
-    file.write(json.dumps(metric_history))
+# with open('time_history_easy.txt', 'w') as file:
+#     file.write(json.dumps(time_history_easy))
+# with open('metric_history_easy.txt', 'w') as file:
+#     file.write(json.dumps(metric_history_easy))
+with open('time_history_SHard.txt', 'w') as file:
+    file.write(json.dumps(time_history_SHard))
+with open('metric_history_SHard.txt', 'w') as file:
+    file.write(json.dumps(metric_history_SHard))
+
+
+

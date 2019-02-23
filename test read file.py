@@ -1,6 +1,3 @@
-a= [[1,-2,-1,2],[4,5,6]]
-for c in a:
-    for var in c:
-        if var>0:
-            a.remove(c)
+a = [1,2,3,4,5]
+b = a.pop()
 print(a)
