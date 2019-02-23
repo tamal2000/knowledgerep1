@@ -2,7 +2,7 @@ import json
 import re
 
 def processString(unprocessedString):
-    sudokuID1 = (re.search(r'\d*$', unprocessedString)).group(0)
+    sudokuID1 = int((re.search(r'\d*$', unprocessedString)).group(0))
     sudokuID2 = (re.search(r'.txt.\d*$', unprocessedString)).group(0)
     fileName = re.sub(sudokuID2,'', unprocessedString)+str('.txt')
 
@@ -39,12 +39,12 @@ for p in metric_history:
     else:
         super_hard[myFile].append(sudokuNum)
 
-
-with open('easy.txt', 'w') as file:
-     file.write(json.dumps(easy))
-with open('medium.txt', 'w') as file:
-    file.write(json.dumps(medium))
-with open('hard.txt', 'w') as file:
-    file.write(json.dumps(hard))
-with open('super_hard.txt', 'w') as file:
-    file.write(json.dumps(super_hard))
+print(easy)
+# with open('easy.txt', 'w') as file:
+#      file.write(json.dumps(easy))
+# with open('medium.txt', 'w') as file:
+#     file.write(json.dumps(medium))
+# with open('hard.txt', 'w') as file:
+#     file.write(json.dumps(hard))
+# with open('super_hard.txt', 'w') as file:
+#     file.write(json.dumps(super_hard))

@@ -435,17 +435,21 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
 
     time_history = {}
     metric_history = {}
+    counter = 1
     for filename in dict_of_indexes:
+        if counter > 9:
+            break
         for index in dict_of_indexes[filename]:
+
             myRulesList = readDIMACS('sudoku-rules.txt')
             puzzle = []
             myPuzzle = readDIMACS(filename, index)
 
             if pop_var_switch == 1:
                 myPuzzle.pop()
-                NewPuzzle = deepcopy(myPuzzle)
 
             puzzle = myRulesList + myPuzzle
+            newPuzzle = deepcopy(puzzle)
 
             start = time.time()
             sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
@@ -457,32 +461,30 @@ def main(dict_of_indexes, num_solutions,pop_var_switch):
             
             if num_solutions > 1:
                 for i in range(num_solutions-1):
-                    myRulesList = readDIMACS('sudoku-rules.txt')
-                    puzzle = []
-
-                    if pop_var_switch == 1:
-                        myPuzzle = NewPuzzle
-                        NewPuzzle = deepcopy(myPuzzle)
-                    else:
-                        myPuzzle = readDIMACS(filename, index)
 
                     inverse_sol = []
                     for var in sol:
-                        inverse_sol.append(var*sol[var]*-1)
-                    puzzle = myRulesList + myPuzzle + [inverse_sol]
+                        inverse_sol.append(var*sol[var]*(-1))
+
+                    puzzle = newPuzzle + [inverse_sol]
+                    newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
-                    sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
+                    sol2, metric = SAT(heuristic_switch, metric_switch, puzzle)
                     end = time.time()
+                    sol = sol2
 
                     if sol != None:
-                        time_history[filename, index].append(end - start)
-                        metric_history[filename, index].append(metric)
+                        time_history[filename + str(index)].append(end - start)
+                        metric_history[filename + str(index)].append(metric)
                     else:
-                        time_history[filename, index].append(None)
-                        metric_history[filename, index].append(None)
+                        time_history[filename + str(index)].append(None)
+                        metric_history[filename + str(index)].append(None)
                         break
-                    print(metric_history[filename,index])
+                    print(metric_history[filename + str(index)])
+            counter +=1
+            if counter > 9:
+                break
     return time_history, metric_history
 
 # --------------------------- Creating benchmarks, only run once ---------------------------
@@ -504,9 +506,9 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_SHard, metric_history_SHard = main(super_hard, 10,1)
+time_history_SHard, metric_history_SHard = main(super_hard, 100,1)
 
-# Writing histories to hard drive as a text file
+# # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
