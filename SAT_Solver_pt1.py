@@ -431,7 +431,7 @@ def SAT(heuristic_switch, metric_switch, puzzle):
 
 def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
     heuristic_switch = 2
-    metric_switch = '#splits'
+    metric_switch = '#backtracks'
 
     if num_popped_vars>1 and num_solutions>1:
         raise ValueError('You can either have multiple solutions or continue omitting vars from puzzle, not both.')
@@ -540,9 +540,9 @@ time_history_SHard, metric_history_SHard = main(super_hard, 1,1,16)
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(metric_history_easy))
-with open('time_history_popVars_SHard.txt', 'w') as file:
+with open('time_history_popVars_SHard_backtrack.txt', 'w') as file:
     file.write(json.dumps(time_history_SHard))
-with open('metric_history_popVars_SHard.txt', 'w') as file:
+with open('metric_history_popVars_SHard_bracktrack.txt', 'w') as file:
     file.write(json.dumps(metric_history_SHard))
 
 
