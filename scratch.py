@@ -1,50 +1,56 @@
 import json
-import re
-
-def processString(unprocessedString):
-    sudokuID1 = int((re.search(r'\d*$', unprocessedString)).group(0))
-    sudokuID2 = (re.search(r'.txt.\d*$', unprocessedString)).group(0)
-    fileName = re.sub(sudokuID2,'', unprocessedString)+str('.txt')
-
-    return fileName, sudokuID1
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
 
-myFile, sudokuNum = processString("top91.sdk.txt1")
-
-with open('metric_history.txt') as f:
-    metric_history = json.load(f)
-with open('time_history.txt') as f:
-    time_history = json.load(f)
-
-easy = {}
-medium = {}
-hard = {}
-super_hard = {}
-fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
-for name in fileNames:
-    easy[name] = []
-    medium[name] = []
-    hard[name] = []
-    super_hard[name] = []
+def reject_outliers(data, m=2): #
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
-for p in metric_history:
-    myFile, sudokuNum = processString(p)
-    if metric_history[p][0] == 0:
-        easy[myFile].append(sudokuNum)
-    elif metric_history[p][0]<10:
-        medium[myFile].append(sudokuNum)
-    elif metric_history[p][0]<100:
-        hard[myFile].append(sudokuNum)
-    else:
-        super_hard[myFile].append(sudokuNum)
+def getMyData(fileName):
+    """
+    Processes the data saved in the dictionaries by removing all outliers, regrouping data by list index, and
+    returning mean and standard deviation as two separate lists. (A format that is easy to plot.)
 
-print(easy)
-# with open('easy.txt', 'w') as file:
-#      file.write(json.dumps(easy))
-# with open('medium.txt', 'w') as file:
-#     file.write(json.dumps(medium))
-# with open('hard.txt', 'w') as file:
-#     file.write(json.dumps(hard))
-# with open('super_hard.txt', 'w') as file:
-#     file.write(json.dumps(super_hard))
+    :param fileName:
+    :return: mean and standard deviation for a metric based on element indices
+    """
+    with open(fileName) as f:  # splits metrics
+        myMetricsData = json.load(f)
+    metricCountList = list(myMetricsData.values())
+    # reoriganize lists so: index = number of vars removed listofList[index] = all data for puzzles when the have index number of variables
+    metricCountList = np.stack(metricCountList, axis=1)
+    # Processing data and extracting means and standard deviation for each variable popped
+    metricMean = []
+    metricStdev = []
+    for listbyVarCount in metricCountList:
+        listbyVarCount2 = reject_outliers(listbyVarCount)  # remove outliers
+        # Get means for each list
+        listMean = np.mean(listbyVarCount2)
+        metricMean.append(listMean)
+        # Get standard deviation for each list
+        listStdev = np.std(listbyVarCount2)
+        metricStdev.append(listStdev)
+    return metricMean, metricStdev
+
+# ----------------------- Code being developed ------------------------------------
+
+dummyMeans1, dummyStdev1 = getMyData('time_history_popVars_SHard_backtrack.txt')
+dummyMeans2, dummyStdev2 = getMyData('time_history_popVars_SHard.txt')
+dummyMeans3, dummyStdev3 = getMyData('time_history_popVars_SHard.txt')
+dummyMeans = [np.mean(dummyMeans1), np.mean(dummyMeans2), np.mean(dummyMeans3)]
+dummyStdevs = [np.mean(dummyStdev1), np.mean(dummyStdev2), np.mean(dummyStdev3)]
+
+
+heuristics = ('No Heuristics', 'Heuristic 1', 'Heuristic 2')
+y_pos = np.arange(len(heuristics))
+
+sns.set()
+#plt.bar(y_pos, dummyMeans, align='center', alpha=0.8, color=('royalblue', 'maroon'))
+plt.bar(y_pos, dummyMeans, yerr=dummyStdevs, align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
+plt.xticks(y_pos, heuristics)
+plt.ylabel('Number of Splits Made',fontsize=18)
+
+plt.show()
