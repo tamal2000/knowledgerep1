@@ -420,28 +420,29 @@ def SAT(heuristic_switch, metric_switch, puzzle):
         backtrack_to_history.remove(None)
     except:
         pass
-    if metric_switch == '#splits':  #determined by number of nonezero and non-None values in backtrack_to_history
-        metric = backtrack_to_history.count(0)
-    elif metric_switch == '#backtracks':  #determined by number of nonezero and non-None values in backtrack_to_history
-        metric = len(backtrack_to_history) - backtrack_to_history.count(0)
+    if metric_switch == '#splits' or '#backtracks':  #determined by number of nonezero and non-None values in backtrack_to_history
+        metric_splits = backtrack_to_history.count(0)
+    if metric_switch == '#backtracks' or '#splits':  #determined by number of nonezero and non-None values in backtrack_to_history
+        metric_backtracks = len(backtrack_to_history) - backtrack_to_history.count(0)
     else:
         raise ValueError('Invalid metric Switch')
 
-    return FinalSoln, metric
+    return FinalSoln, metric_splits, metric_backtracks
 
 def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
     heuristic_switch = 2
-    metric_switch = '#backtracks'
+    metric_switch = '#splits'
 
     if num_popped_vars>1 and num_solutions>1:
         raise ValueError('You can either have multiple solutions or continue omitting vars from puzzle, not both.')
 
     time_history = {}
-    metric_history = {}
+    metric_history_splits = {}
+    metric_history_backtracks = {}
     counter = 1
     for filename in dict_of_indexes:
         #remove this part!!!!!!!!!!!!!!!!!!!!!!1
-        # if counter > 9:
+        # if counter > 2:
         #     break
 
         for index in dict_of_indexes[filename]:
@@ -457,11 +458,12 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
             newPuzzle = deepcopy(puzzle)
 
             start = time.time()
-            sol, metric = SAT(heuristic_switch, metric_switch, puzzle)
+            sol, metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
             end = time.time()
 
             time_history[filename + str(index)] = [end-start]
-            metric_history[filename + str(index)] = [metric]
+            metric_history_splits[filename + str(index)] = [metric_splits]
+            metric_history_backtracks[filename + str(index)] = [metric_backtracks]
             print(end - start)
             
             if num_solutions > 1:
@@ -475,18 +477,20 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                     newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
-                    sol2, metric = SAT(heuristic_switch, metric_switch, puzzle)
+                    sol2,  metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
                     end = time.time()
                     sol = sol2
 
                     if sol != None:
                         time_history[filename + str(index)].append(end - start)
-                        metric_history[filename + str(index)].append(metric)
+                        metric_history_splits[filename + str(index)].append(metric_splits)
+                        metric_history_backtracks[filename + str(index)].append(metric_backtracks)
                     else:
                         time_history[filename + str(index)].append(None)
-                        metric_history[filename + str(index)].append(None)
+                        metric_history_splits[filename + str(index)].append(None)
+                        metric_history_backtracks[filename + str(index)].append(None)
                         break
-                    print(metric_history[filename + str(index)])
+                    print(metric_history_backtracks[filename + str(index)])
 
             if num_popped_vars>1:
                 for i in range(num_popped_vars - 1):
@@ -495,24 +499,26 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                     newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
-                    sol2, metric = SAT(heuristic_switch, metric_switch, puzzle)
+                    sol2,  metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
                     end = time.time()
                     sol = sol2
 
                     if sol != None:
                         time_history[filename + str(index)].append(end - start)
-                        metric_history[filename + str(index)].append(metric)
+                        metric_history_splits[filename + str(index)].append(metric_splits)
+                        metric_history_backtracks[filename + str(index)].append(metric_backtracks)
                     else:
                         time_history[filename + str(index)].append(None)
-                        metric_history[filename + str(index)].append(None)
+                        metric_history_splits[filename + str(index)].append(None)
+                        metric_history_backtracks[filename + str(index)].append(None)
                         break
-                    print(metric_history[filename + str(index)])
+                    print(metric_history_backtracks[filename + str(index)])
             #remove this part!!!!!!!!!!!!!!!!!!!!!!!!!
             # counter +=1
-            # if counter > 9:
+            # if counter > 2:
             #     break
 
-    return time_history, metric_history
+    return time_history, metric_history_splits, metric_history_backtracks
 
 # --------------------------- Creating benchmarks, only run once ---------------------------
 #fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
@@ -533,17 +539,19 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_SHard, metric_history_SHard = main(super_hard, 1,1,16)
+time_history_SHard, metric_history_splits_SHard , metric_history_backtracks_SHard= main(super_hard, 100,1,1)
 
 # # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(metric_history_easy))
-with open('time_history_popVars_SHard_backtrack.txt', 'w') as file:
+with open('time_history_100sols_SHard.txt', 'w') as file:
     file.write(json.dumps(time_history_SHard))
-with open('metric_history_popVars_SHard_bracktrack.txt', 'w') as file:
-    file.write(json.dumps(metric_history_SHard))
+with open('metric_history_100sols_splits_SHard.txt', 'w') as file:
+    file.write(json.dumps(metric_history_splits_SHard))
+with open('metric_history_100sols_backtracks_SHard.txt', 'w') as file:
+    file.write(json.dumps(metric_history_backtracks_SHard))
 
 
 
