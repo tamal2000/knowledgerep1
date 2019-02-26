@@ -51,6 +51,6 @@ sns.set()
 #plt.bar(y_pos, dummyMeans, align='center', alpha=0.8, color=('royalblue', 'maroon'))
 plt.bar(y_pos, dummyMeans, yerr=dummyStdevs, align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
 plt.xticks(y_pos, heuristics)
-plt.ylabel('Number of Splits Made',fontsize=18)
+plt.ylabel('$\Delta$ Splits',fontsize=18)
 
 plt.show()
