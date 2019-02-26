@@ -9,7 +9,7 @@ def reject_outliers(data, m=2): #
     return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
-def getMyData(fileName):
+def getMyData(fileName): # ONLY for scatterplots...do not do histograms with this, you'll get an error
     """
     Processes the data saved in the dictionaries by removing all outliers, regrouping data by list index, and
     returning mean and standard deviation as two separate lists. (A format that is easy to plot.)
@@ -35,22 +35,38 @@ def getMyData(fileName):
         metricStdev.append(listStdev)
     return metricMean, metricStdev
 
+def barPlotPrep(fileName):
+    with open(fileName) as f:  # splits metrics
+        myMetricsData = json.load(f)
+    metricList = list(myMetricsData.values())
+    flatMetricList = []
+    for singleList in metricList:
+        for listElement in singleList:
+            flatMetricList.append(listElement)
+
+    print(flatMetricList)
+    flatMetricList2 = np.asarray(flatMetricList)
+    flatMetricList2 = reject_outliers(flatMetricList2, 0.5)
+
+
+    return flatMetricList2
 # ----------------------- Code being developed ------------------------------------
+randomMeans = barPlotPrep('metric_history_random_splits_SHard.txt')
+dummyMeans = barPlotPrep('metric_history_jwonesided_splits_SHard.txt')
+DLSIMeans = barPlotPrep('metric_history_DLSI_splits_SHard.txt')
 
-dummyMeans1, dummyStdev1 = getMyData('time_history_popVars_SHard_backtrack.txt')
-dummyMeans2, dummyStdev2 = getMyData('time_history_popVars_SHard.txt')
-dummyMeans3, dummyStdev3 = getMyData('time_history_popVars_SHard.txt')
-dummyMeans = [np.mean(dummyMeans1), np.mean(dummyMeans2), np.mean(dummyMeans3)]
-dummyStdevs = [np.mean(dummyStdev1), np.mean(dummyStdev2), np.mean(dummyStdev3)]
+heuristicMeans = [np.mean(randomMeans), np.mean(dummyMeans), np.mean(DLSIMeans)]
+heuristicStdev = [np.std(randomMeans), np.std(dummyMeans), np.std(DLSIMeans)]
 
-
-heuristics = ('No Heuristics', 'Heuristic 1', 'Heuristic 2')
+heuristics = ('No Heuristics', 'One-Sided JW Heuristic', 'DSLI Heuristic')
 y_pos = np.arange(len(heuristics))
 
 sns.set()
 #plt.bar(y_pos, dummyMeans, align='center', alpha=0.8, color=('royalblue', 'maroon'))
-plt.bar(y_pos, dummyMeans, yerr=dummyStdevs, align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
+plt.bar(y_pos, heuristicMeans, yerr=heuristicStdev , align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
 plt.xticks(y_pos, heuristics)
-plt.ylabel('$\Delta$ Splits',fontsize=18)
+plt.ylabel('Number of Splits Made',fontsize=18)
 
 plt.show()
+
+

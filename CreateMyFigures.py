@@ -35,20 +35,22 @@ def getMyData(fileName):
         metricStdev.append(listStdev)
     return metricMean, metricStdev
 
-def makeScatterPlot(meansList, standardDev): # Use it or delete it
-    for index, singlemeansList in enumerate(meansList):
-        xAxisRange = len(singlemeansList) + 1
-        xAxis = list(range(1, xAxisRange))
-        # making dataframe to pass to seaborn
-        df = pd.DataFrame({'x': (range(1, xAxisRange)), 'y': meansList})
-        # plotting
-        sns.set()
-        plt.errorbar(df.index + 1, meansList, yerr=standardDev[index], fmt='-o')
+def barPlotPrep(fileName):
+    with open(fileName) as f:  # splits metrics
+        myMetricsData = json.load(f)
+    metricList = list(myMetricsData.values())
+    flatMetricList = []
+    for singleList in metricList:
+        for listElement in singleList:
+            flatMetricList.append(listElement)
 
-    plt.xlabel('Variables Removed', fontsize=18)
-    plt.ylabel('Number of Splits', fontsize=18)
-    plt.show()
-    return 0
+    print(flatMetricList)
+    flatMetricList2 = np.asarray(flatMetricList)
+    flatMetricList2 = reject_outliers(flatMetricList2, 0.5)
+
+
+    return flatMetricList2
+
 
 # -------------------------------- Plots for Pop Vars ----------------------------------------------------------
 meanSplitsforVarsRemoved, stDevforVarsRemoved = getMyData('metric_history_popVars_SHard.txt')
@@ -63,7 +65,7 @@ plt.errorbar(df.index+1, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt
 #placeholder for easy puzzles
 #plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
 plt.xlabel('Variables Removed', fontsize=18)
-plt.ylabel('Number of Splits',fontsize=18)
+plt.ylabel('Splits Made',fontsize=18)
 plt.legend()
 plt.show()
 
@@ -84,7 +86,7 @@ plt.errorbar(df.index+1, meanSplitsforMultiSoln, yerr=stDevforMultiSoln, fmt='-o
 #placeholder for easy puzzles
 #plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
 plt.xlabel('Number of Solutions Found', fontsize=18)
-plt.ylabel('Difference in Splits Made',fontsize=18)
+plt.ylabel('$\Delta$ Splits Made',fontsize=18)
 plt.legend()
 plt.show()
 
@@ -101,25 +103,25 @@ plt.errorbar(df.index+1, meanSplitsforMultiSoln, yerr=stDevforMultiSoln, fmt='-o
 #placeholder for easy puzzles
 #plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
 plt.xlabel('Number of Solutions Found', fontsize=18)
-plt.ylabel('Difference in Splits Made',fontsize=18)
+plt.ylabel('Splits Made',fontsize=18)
 plt.legend()
 plt.show()
 
 
-# ----------------------- Histogram for heuristics ------------------------------------
+# ----------------------------------------- Histogram for heuristics ----------------------------------------------
+# Cleaning and processing data
+randomMeans = barPlotPrep('metric_history_random_splits_SHard.txt')
+dummyMeans = barPlotPrep('metric_history_jwonesided_splits_SHard.txt')
+DLSIMeans = barPlotPrep('metric_history_DLSI_splits_SHard.txt')
+# Aggregating Data
+heuristicMeans = [np.mean(randomMeans), np.mean(dummyMeans), np.mean(DLSIMeans)]
+heuristicStdev = [np.std(randomMeans), np.std(dummyMeans), np.std(DLSIMeans)]
 
-dummyMeans1, dummyStdev1 = getMyData('time_history_popVars_SHard_backtrack.txt')
-dummyMeans2, dummyStdev2 = getMyData('time_history_popVars_SHard.txt')
-dummyMeans3, dummyStdev3 = getMyData('time_history_popVars_SHard.txt')
-dummyMeans = [np.mean(dummyMeans1), np.mean(dummyMeans2), np.mean(dummyMeans3)]
-dummyStdevs = [np.mean(dummyStdev1), np.mean(dummyStdev2), np.mean(dummyStdev3)]
-
-
-heuristics = ('No Heuristics', 'Heuristic 1', 'Heuristic 2')
+# plotting data
+heuristics = ('No Heuristics', 'One-Sided JW Heuristic', 'DSLI Heuristic')
 y_pos = np.arange(len(heuristics))
 sns.set()
-#plt.bar(y_pos, dummyMeans, align='center', alpha=0.8, color=('royalblue', 'maroon'))
-plt.bar(y_pos, dummyMeans, yerr=dummyStdevs, align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
+plt.bar(y_pos, heuristicMeans, yerr=heuristicStdev , align='center', alpha=0.9, color=('cornflowerblue', 'royalblue', 'navy'), ecolor='black', capsize=10)
 plt.xticks(y_pos, heuristics)
-plt.ylabel('Number of Splits Made',fontsize=18)
+plt.ylabel('Splits Made',fontsize=18)
 plt.show()
