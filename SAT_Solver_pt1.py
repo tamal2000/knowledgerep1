@@ -449,12 +449,12 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
 
             myRulesList = readDIMACS('sudoku-rules.txt')
             puzzle = []
-            myPuzzle = readDIMACS(filename, index)
+            myPuzzle = readDIMACS(filename)
 
             if pop_var_switch == 1:
                 myPuzzle.pop()
 
-            puzzle = myRulesList + myPuzzle
+            puzzle = myPuzzle
             newPuzzle = deepcopy(puzzle)
 
             start = time.time()
@@ -473,7 +473,10 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                     for var in sol:
                         inverse_sol.append(var*sol[var]*(-1))
 
+                    print('inverse sol:',inverse_sol)
+                    print('sol:',sol)
                     puzzle = newPuzzle + [inverse_sol]
+                    print(puzzle)
                     newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
@@ -491,7 +494,7 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                         metric_history_backtracks[filename + str(index)].append(None)
                         break
                     print(metric_history_backtracks[filename + str(index)])
-
+                    print(sol)
             if num_popped_vars>1:
                 for i in range(num_popped_vars - 1):
                     puzzle = newPuzzle
@@ -539,19 +542,23 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(chosen_easy, 100,1,1)
+#time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(super_hard, 100,1,1)
 
 # # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(metric_history_easy))
-with open('time_history_100sols_Ceasy.txt', 'w') as file:
-    file.write(json.dumps(time_history_Ceasy))
-with open('metric_history_100sols_splits_Ceasy.txt', 'w') as file:
-    file.write(json.dumps(metric_history_splits_Ceasy))
-with open('metric_history_100sols_backtracks_Ceasy.txt', 'w') as file:
-    file.write(json.dumps(metric_history_backtracks_Ceasy))
+
+# with open('time_history_100sols_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(time_history_Ceasy))
+# with open('metric_history_100sols_splits_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(metric_history_splits_Ceasy))
+# with open('metric_history_100sols_backtracks_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(metric_history_backtracks_Ceasy))
 
 
 
+# example = {}
+# example['dimacsex.txt']=[1]
+# time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(example, 2,0,1)
