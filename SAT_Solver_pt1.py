@@ -430,7 +430,7 @@ def SAT(heuristic_switch, metric_switch, puzzle):
     return FinalSoln, metric_splits, metric_backtracks
 
 def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
-    heuristic_switch = 1
+    heuristic_switch = 2
     metric_switch = '#splits'
 
     if num_popped_vars>1 and num_solutions>1:
@@ -512,7 +512,7 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                         metric_history_splits[filename + str(index)].append(None)
                         metric_history_backtracks[filename + str(index)].append(None)
                         break
-                    print(metric_history_backtracks[filename + str(index)])
+                    print(metric_history_splits[filename + str(index)])
             #remove this part!!!!!!!!!!!!!!!!!!!!!!!!!
             # counter +=1
             # if counter > 2:
@@ -539,18 +539,18 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(chosen_easy, 1,1,16)
+time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(chosen_easy, 100,1,1)
 
 # # Writing histories to hard drive as a text file
 # with open('time_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(time_history_easy))
 # with open('metric_history_easy.txt', 'w') as file:
 #     file.write(json.dumps(metric_history_easy))
-with open('time_history_popVar_Ceasy.txt', 'w') as file:
+with open('time_history_100sols_Ceasy.txt', 'w') as file:
     file.write(json.dumps(time_history_Ceasy))
-with open('metric_history_popVar_splits_Ceasy.txt', 'w') as file:
+with open('metric_history_100sols_splits_Ceasy.txt', 'w') as file:
     file.write(json.dumps(metric_history_splits_Ceasy))
-with open('metric_history_popVar_backtracks_Ceasy.txt', 'w') as file:
+with open('metric_history_100sols_backtracks_Ceasy.txt', 'w') as file:
     file.write(json.dumps(metric_history_backtracks_Ceasy))
 
 
