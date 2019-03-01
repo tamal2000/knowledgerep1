@@ -87,6 +87,8 @@ def barPlotPrep(fileName):
 
     return flatMetricList2
 
+#def makeBarPlot():
+
 # #-------------------------------- Plots for Pop Vars ----------------------------------------------------------
 # dataSetPopsVarsHard_Splits = {'metric_history_popVars_splits_SHard.txt':'Super Hard Puzzles', 'metric_history_popVar_splits_Ceasy.txt': 'Easy Puzzles'}
 # makeScatterplot(dataSetPopsVarsHard_Splits, 'Variables Removed', 'Splits Made')

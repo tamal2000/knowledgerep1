@@ -542,14 +542,14 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-time_history_SHard, metric_history_splits_SHard , metric_history_backtracks_SHard= main(super_hard, 1,1,16)
+time_history_SHard, metric_history_splits_SHard , metric_history_backtracks_SHard= main(super_hard, 100,1,1)
 
 
-with open('time_history_popVars_SHard.txt', 'w') as file:
+with open('time_history_100sols_SHard.txt', 'w') as file:
     file.write(json.dumps(time_history_SHard))
-with open('metric_history_popVars_splits_SHard.txt', 'w') as file:
+with open('metric_history_100sols_splits_SHard.txt', 'w') as file:
     file.write(json.dumps(metric_history_splits_SHard))
-with open('metric_history_popVars_backtracks_SHard.txt', 'w') as file:
+with open('metric_history_100sols_backtracks_SHard.txt', 'w') as file:
     file.write(json.dumps(metric_history_backtracks_SHard))
 
 
