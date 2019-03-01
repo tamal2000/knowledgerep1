@@ -4,7 +4,8 @@ from copy import deepcopy
 import json
 import re
 
-def readDIMACS(filename,sudokuNum=None):
+
+def readDIMACS(filename, sudokuNum=None):
     """
     convert DIMACS file into list of numbers. There's an if-else statement that acts as a switch to see whether
     you're inputting a list of rules OR the non-DIMACS version of Sudoku puzzle. If it's a non-DIMACS Sudoku puzzle,
@@ -35,12 +36,13 @@ def readDIMACS(filename,sudokuNum=None):
         for index in range(len(DIMACS_Lines)):
             makelineList = []
             line = DIMACS_Lines[index]
-            #line = list(map(int, line))
+            # line = list(map(int, line))
             line = line[0:len(line) - 2]  # removes zero AND whitespace from the end of each line
             line = int(line)
             makelineList.append(line)
             myList.append(makelineList)
     return myList
+
 
 def getMySudoku(filename, sudokuNum):
     """
@@ -61,29 +63,28 @@ def getMySudoku(filename, sudokuNum):
     extra motivated, you can look it over.
     """
     fileText = fileText.replace("\n", "")
-    if len( fileText)/81 >=  sudokuNum:
-        puzzle = fileText[sudokuNum*81 : sudokuNum*81 + 81]
-
+    if len(fileText) / 81 >= sudokuNum:
+        puzzle = fileText[sudokuNum * 81: sudokuNum * 81 + 81]
 
         # Convert flat list into ordered list to access numbers
-        puzzleRows = [puzzle[i:i+9] for i in range(0, len(puzzle), 9)]
+        puzzleRows = [puzzle[i:i + 9] for i in range(0, len(puzzle), 9)]
         # Then use ordered list to extract (Row,Col,GridValue) and output DIMACS file
         DIMACS_lines = []
         for index in range(len(puzzleRows)):
             puzzleRows[index] = list(puzzleRows[index])
             for gridIndex, gridValue in enumerate(puzzleRows[index]):
                 if gridValue != '.':
-                    DIMACS_line = str(index+1)+str(gridIndex+1) + str(gridValue) + str(' 0')
+                    DIMACS_line = str(index + 1) + str(gridIndex + 1) + str(gridValue) + str(' 0')
                     DIMACS_lines.append(DIMACS_line)
     else:
         print("Error. Puzzle doesn't exist. Try inputting a smaller, non-negative number.")
 
     return DIMACS_lines
 
+
 # ---------------------To get all puzzles with x numbers of variables as a dictionary----------------------------------
 
 def findSudokuByVarNum(filename, varNum=17):
-
     """
     :param filename: Sudoku file name that you wanted to search
     :param varNum: The numbers of variables that you're searching for. (Default value is 17).
@@ -96,7 +97,6 @@ def findSudokuByVarNum(filename, varNum=17):
     fileText = fileText.replace("\n", "")
     totPuzzleNum = int(len(fileText) / 81)
 
-
     # Look through readDIMACS() of entire file
     SavedPuzzleIDs = []
     for i in range(0, totPuzzleNum):
@@ -105,6 +105,7 @@ def findSudokuByVarNum(filename, varNum=17):
             SavedPuzzleIDs.append(i)
 
     return SavedPuzzleIDs
+
 
 def createMyBenchmarks(fileNamesList, desiredVarNum):
     """
@@ -128,9 +129,9 @@ def createMyBenchmarks(fileNamesList, desiredVarNum):
 
     return 0
 
+
 # ----------Heuristics--------------
 def JW_onesided(myPuzzle, potentialVarsList):
-
     """
     :param myPuzzle: The list of rules you're trying to solve
     :param potentialVarsList: List of variables we can select from
@@ -149,7 +150,7 @@ def JW_onesided(myPuzzle, potentialVarsList):
             # checks to see if any variables from potentialVarsList are in that specific clause of the puzzle
             # if so, update the varweight using the JW formula
             if (puzzleVar in potentialVarsList) == True:
-                varWeights[abs(puzzleVar)] += 2**(-1*len(clause))
+                varWeights[abs(puzzleVar)] += 2 ** (-1 * len(clause))
 
     # Following part addresses scenario in which several vars share the maximum weight
     # Will build a list of all vars with max value, then randomly select a var to be returned
@@ -162,7 +163,8 @@ def JW_onesided(myPuzzle, potentialVarsList):
 
     return selectedVar
 
-def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
+
+def DLIS(myPuzzle, potentialVarsList, currentSoln):  # Pass me the puzzle
     """
     Counts the number of occurrences of literal l in unsatisfied clauses. Returns l with highest count.
 
@@ -188,24 +190,29 @@ def DLIS(myPuzzle, potentialVarsList, currentSoln): # Pass me the puzzle
             else:
                 clauseValues.append(-1 * currentSoln[abs(myVar)])
         # if clause not satisfied, then check to see if variables from varList are in it
-        if (1 in clauseValues) == False:
+        if not (1 in clauseValues):
             for myVar in potentialVarsList:
-                if (myVar in clause) == True:
-                    varWeights[myVar] += 1
+                if myVar in clause or -myVar in clause:
+                    varWeights[abs(myVar)] += 1
 
     # Selects variable with highest occurrence of unsatisified clauses.
     # If there's a tie, one variable is randomly selected.
     minVal = min(varWeights.values())
-    #selectionList = []
+    # print("Min val: "+str(minVal))
+    # print(736 in potentialVarsList)
+    # if 736 in potentialVarsList:
+    #     print(varWeights[736])
+    # selectionList = []
+    selectedVar = -1
     for myVar, myVarWeight in varWeights.items():
-        if myVarWeight == minVal:
+        if myVarWeight == minVal and selectedVar < myVar:
             selectedVar = myVar
-            break
 
     return selectedVar
 
+
 # ----------Simplification----------
-def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
+def simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch):
     """
     simplifies the puzzle by omitting tautologies, setting pure literals to 1, and omitting unit clauses and setting
     them to 1. It omits all the variables that are assigned in the FinalSoln from the puzzle to save time in future
@@ -220,11 +227,11 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
 
     stop_simplifying_check = 0
     is_inconsistent = 0
-    while stop_simplifying_check == 0:   # stops when nothing has changed in the last simplification
+    while stop_simplifying_check == 0:  # stops when nothing has changed in the last simplification
         stop_simplifying_check = 1
-        var_list = []   # for pure literal simplification
+        var_list = []  # for pure literal simplification
         for clause in puzzle:
-            clause_remove_check = 0 # checks if the clause can be removed due to any of the simplification rules
+            clause_remove_check = 0  # checks if the clause can be removed due to any of the simplification rules
             for var in clause:
                 # tautology
                 if tautology_switch == 1:
@@ -240,10 +247,10 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                             FinalSoln[var] = 1
                         clause_remove_check = 1
                         stop_simplifying_check = 0
-                    if len(clause) == 1 and FinalSoln[abs(var)]*var > 0:
+                    if len(clause) == 1 and FinalSoln[abs(var)] * var > 0:
                         clause_remove_check = 1
                         stop_simplifying_check = 0
-                    if len(clause) == 1 and FinalSoln[abs(var)]*var < 0:
+                    if len(clause) == 1 and FinalSoln[abs(var)] * var < 0:
                         is_inconsistent = 1
                         stop_simplifying_check = 1
                 # pure
@@ -265,11 +272,11 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
         for clause in puzzle:
             for var in clause:
                 if FinalSoln[abs(var)] != 0:
-                    if FinalSoln[abs(var)]*var > 0: #remove satisfied clause
+                    if FinalSoln[abs(var)] * var > 0:  # remove satisfied clause
                         puzzle.remove(clause)
                         stop_simplifying_check = 0
                         break
-                    else:   #romoves assigned variable form clause
+                    else:  # romoves assigned variable form clause
                         clause.remove(var)
                         stop_simplifying_check = 0
             if len(clause) == 0:
@@ -278,6 +285,7 @@ def simplify(puzzle,FinalSoln,tautology_switch, pure_switch, unit_switch):
                 break
 
     return FinalSoln, puzzle, is_inconsistent
+
 
 # ----------Splitting----------
 def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heuristic, is_inconsistent):
@@ -304,8 +312,8 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
         if FinalSoln[var] == 0:
             vars_to_split.append(var)
 
-    backtrack_to = 0    # backtrack_to = 0: there is nothing to backtrack to, another variable is chosen in the same branch
-    if is_inconsistent == 1: # have to back track
+    backtrack_to = 0  # backtrack_to = 0: there is nothing to backtrack to, another variable is chosen in the same branch
+    if is_inconsistent == 1:  # have to back track
         for var in reversed(chosen_list):
             if FinalSoln[abs(var)] == 1:
                 puzzle = puzzle_history[var]
@@ -326,14 +334,15 @@ def split(FinalSoln, puzzle, FinalSoln_history, puzzle_history, chosen_list, Heu
         if Heuristic == 'DLIS':
             split_var = DLIS(puzzle, vars_to_split, FinalSoln)
         puzzle_history[split_var] = deepcopy(puzzle)
-        FinalSoln_history[split_var] = deepcopy(FinalSoln) #FinalSoln[:]
+        FinalSoln_history[split_var] = deepcopy(FinalSoln)  # FinalSoln[:]
         FinalSoln[split_var] = 1
         chosen_list.append(split_var)
 
     return FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to
 
+
 # ----------Stopping----------
-def stop(puzzle,FinalSoln):
+def stop(puzzle, FinalSoln):
     """
     checks if we should stop. If found_solution is 1, we have a solution. If it is 0, we don't.
     :param puzzle:
@@ -344,13 +353,15 @@ def stop(puzzle,FinalSoln):
     for clause in puzzle:
         clause_sat = 0
         for var in clause:
-            if FinalSoln[abs(var)]*var > 0:
+            if FinalSoln[abs(var)] * var > 0:
                 clause_sat = 1
         if clause_sat == 0:
             found_solution = 0
             break
     return found_solution
-#add inconsistant
+
+
+# add inconsistant
 
 
 # ----------Main----------
@@ -383,7 +394,6 @@ def SAT(heuristic_switch, metric_switch, puzzle):
     else:
         raise ValueError('Invalid Heuristic Switch')
 
-
     tautology_switch = 1
     pure_switch = 0
     unit_switch = 1
@@ -397,11 +407,14 @@ def SAT(heuristic_switch, metric_switch, puzzle):
     iter_counter = 1
     while stop_check == 0:
         FinalSoln, puzzle, puzzle_history, FinalSoln_history, chosen_list, backtrack_to = split(FinalSoln,
-                                                                                                puzzle, FinalSoln_history,
-                                                                                                puzzle_history, chosen_list,
-                                                                                                Heuristic,is_inconsistent)
+                                                                                                puzzle,
+                                                                                                FinalSoln_history,
+                                                                                                puzzle_history,
+                                                                                                chosen_list,
+                                                                                                Heuristic,
+                                                                                                is_inconsistent)
 
-        backtrack_to_history.append(backtrack_to)   # for evaluating metrics for num of backtracks and num of splits
+        backtrack_to_history.append(backtrack_to)  # for evaluating metrics for num of backtracks and num of splits
 
         FinalSoln, puzzle, is_inconsistent = simplify(puzzle, FinalSoln, tautology_switch, pure_switch, unit_switch)
         stop_check = stop(puzzle, FinalSoln)
@@ -415,25 +428,26 @@ def SAT(heuristic_switch, metric_switch, puzzle):
         # print('iter',iter_counter)
         iter_counter += 1
 
-    #metric switch
+    # metric switch
     try:
         backtrack_to_history.remove(None)
     except:
         pass
-    if metric_switch == '#splits' or '#backtracks':  #determined by number of nonezero and non-None values in backtrack_to_history
+    if metric_switch == '#splits' or '#backtracks':  # determined by number of nonezero and non-None values in backtrack_to_history
         metric_splits = backtrack_to_history.count(0)
-    if metric_switch == '#backtracks' or '#splits':  #determined by number of nonezero and non-None values in backtrack_to_history
+    if metric_switch == '#backtracks' or '#splits':  # determined by number of nonezero and non-None values in backtrack_to_history
         metric_backtracks = len(backtrack_to_history) - backtrack_to_history.count(0)
     else:
         raise ValueError('Invalid metric Switch')
 
     return FinalSoln, metric_splits, metric_backtracks
 
-def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
+
+def main(dict_of_indexes, num_solutions, pop_var_switch, num_popped_vars=1):
     heuristic_switch = 2
     metric_switch = '#splits'
 
-    if num_popped_vars>1 and num_solutions>1:
+    if num_popped_vars > 1 and num_solutions > 1:
         raise ValueError('You can either have multiple solutions or continue omitting vars from puzzle, not both.')
 
     time_history = {}
@@ -441,7 +455,7 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
     metric_history_backtracks = {}
     counter = 1
     for filename in dict_of_indexes:
-        #remove this part!!!!!!!!!!!!!!!!!!!!!!1
+        # remove this part!!!!!!!!!!!!!!!!!!!!!!1
         # if counter > 2:
         #     break
 
@@ -449,38 +463,35 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
 
             myRulesList = readDIMACS('sudoku-rules.txt')
             puzzle = []
-            myPuzzle = readDIMACS(filename)
+            myPuzzle = readDIMACS(filename, index)
 
             if pop_var_switch == 1:
                 myPuzzle.pop()
 
-            puzzle = myPuzzle
+            puzzle = myRulesList + myPuzzle
             newPuzzle = deepcopy(puzzle)
 
             start = time.time()
             sol, metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
             end = time.time()
 
-            time_history[filename + str(index)] = [end-start]
+            time_history[filename + str(index)] = [end - start]
             metric_history_splits[filename + str(index)] = [metric_splits]
             metric_history_backtracks[filename + str(index)] = [metric_backtracks]
             print(end - start)
-            
+
             if num_solutions > 1:
-                for i in range(num_solutions-1):
+                for i in range(num_solutions - 1):
 
                     inverse_sol = []
                     for var in sol:
-                        inverse_sol.append(var*sol[var]*(-1))
+                        inverse_sol.append(var * sol[var] * (-1))
 
-                    print('inverse sol:',inverse_sol)
-                    print('sol:',sol)
                     puzzle = newPuzzle + [inverse_sol]
-                    print(puzzle)
                     newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
-                    sol2,  metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
+                    sol2, metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
                     end = time.time()
                     sol = sol2
 
@@ -494,15 +505,15 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                         metric_history_backtracks[filename + str(index)].append(None)
                         break
                     print(metric_history_backtracks[filename + str(index)])
-                    print(sol)
-            if num_popped_vars>1:
+
+            if num_popped_vars > 1:
                 for i in range(num_popped_vars - 1):
                     puzzle = newPuzzle
                     puzzle.pop()
                     newPuzzle = deepcopy(puzzle)
 
                     start = time.time()
-                    sol2,  metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
+                    sol2, metric_splits, metric_backtracks = SAT(heuristic_switch, metric_switch, puzzle)
                     end = time.time()
                     sol = sol2
 
@@ -516,17 +527,18 @@ def main(dict_of_indexes, num_solutions,pop_var_switch,num_popped_vars = 1):
                         metric_history_backtracks[filename + str(index)].append(None)
                         break
                     print(metric_history_splits[filename + str(index)])
-            #remove this part!!!!!!!!!!!!!!!!!!!!!!!!!
+            # remove this part!!!!!!!!!!!!!!!!!!!!!!!!!
             # counter +=1
             # if counter > 2:
             #     break
 
     return time_history, metric_history_splits, metric_history_backtracks
 
+
 # --------------------------- Creating benchmarks, only run once ---------------------------
-#fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
+fileNames = ['top91.sdk.txt', '1000 sudokus.txt','damnhard.sdk.txt','subig20.sdk.txt','top95.sdk.txt','top100.sdk.txt','top870.sdk.txt','top2365.sdk.txt']
 # Only run the line below ONCE. (Otherwise, you're just overwriting the results for the same file.)
-#createMyBenchmarks(fileNames, 17)
+createMyBenchmarks(fileNames, 17)
 # ------------------------------------------------------------------------------------------
 
 
@@ -542,23 +554,17 @@ with open('super_hard.txt') as f:
 print(super_hard)
 
 # time_history_easy, metric_history_easy = main(easy, 10,1)
-#time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(super_hard, 100,1,1)
+time_history, metric_history_split, metric_history_backtrack = main(myBenchmarks, 1,0,0)
 
-# # Writing histories to hard drive as a text file
-# with open('time_history_easy.txt', 'w') as file:
-#     file.write(json.dumps(time_history_easy))
-# with open('metric_history_easy.txt', 'w') as file:
-#     file.write(json.dumps(metric_history_easy))
-
-# with open('time_history_100sols_Ceasy.txt', 'w') as file:
-#     file.write(json.dumps(time_history_Ceasy))
-# with open('metric_history_100sols_splits_Ceasy.txt', 'w') as file:
-#     file.write(json.dumps(metric_history_splits_Ceasy))
-# with open('metric_history_100sols_backtracks_Ceasy.txt', 'w') as file:
-#     file.write(json.dumps(metric_history_backtracks_Ceasy))
+# with open('time_history_DLIS_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(time_history_SHard))
+# with open('metric_history_DLIS_splits_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(metric_history_splits_SHard))
+# with open('metric_history_DLIS_backtracks_Ceasy.txt', 'w') as file:
+#     file.write(json.dumps(metric_history_backtracks_SHard))
 
 
-
-# example = {}
-# example['dimacsex.txt']=[1]
-# time_history_Ceasy, metric_history_splits_Ceasy , metric_history_backtracks_Ceasy= main(example, 2,0,1)
+with open('time_history.txt', 'w') as file:
+    file.write(json.dumps(time_history))
+with open('metric_history_backtrack.txt', 'w') as file:
+    file.write(json.dumps(metric_history_backtrack))

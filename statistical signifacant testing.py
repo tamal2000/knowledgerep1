@@ -32,8 +32,8 @@ def significance_testing(file_easy,file_hard,number_of_tests,alpha):
         copy_easy_vals = deepcopy(easy_vals)
         copy_hard_vals = deepcopy(hard_vals)
 
-        # if len(copy_easy_vals) != len(copy_hard_vals):
-        #     raise ValueError('lengths are not equal')
+        if len(copy_easy_vals) != len(copy_hard_vals):
+            raise ValueError('lengths are not equal')
 
         #select a random position and swap
         index = random.choice(range(0,len(easy_vals)))
@@ -54,11 +54,20 @@ def significance_testing(file_easy,file_hard,number_of_tests,alpha):
     avgs.sort()
     index = avgs.index(initial_avg)
     if index >= (1-alpha)*len(avgs):
-        print('The difference is statistically significant.')
+        print('The difference is NOT statistically significant.')
+        result = 0
     else:
-        print('Not statistically significant.')
-    #print(avgs)
-    #print(index)
-    return 0
+        print('The difference IS statistically significant.')
+        result = 1
+    return result
 
-significance_testing('metric_history_popVar_backtracks_Ceasy.txt','metric_history_popVars_backtracks_SHard.txt', 100, 0.05)
+ST_popVars_backtrack = significance_testing('metric_history_popVar_backtracks_Ceasy.txt','metric_history_popVars_bracktracks_SHard.txt',100,0.05)
+ST_popVars_split = significance_testing('metric_history_popVar_splits_Ceasy.txt','metric_history_popVars_splits_SHard.txt',100,0.05)
+
+ST_50sols_backtrack = significance_testing('metric_history_50sols_backtracks_Ceasy.txt','metric_history_50sols_backtracks_SHard.txt',100,0.05)
+ST_50sols_split = significance_testing('metric_history_50sols_splits_Ceasy.txt','metric_history_50sols_splits_SHard.txt',100,0.05)
+
+print('popVar splits:', ST_popVars_split)
+print('popVar backtracks:', ST_popVars_backtrack)
+print('popVar splits:', ST_50sols_split)
+print('popVar backtracks:', ST_50sols_backtrack)

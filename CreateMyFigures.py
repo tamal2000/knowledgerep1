@@ -51,68 +51,63 @@ def barPlotPrep(fileName):
 
     return flatMetricList2
 
+def makeScatterplot(dataDict, myXLabel, myYLabel): #Pass hard and easy puzzles IN THAT order
 
-# -------------------------------- Plots for Pop Vars ----------------------------------------------------------
-meanSplitsforVarsRemoved, stDevforVarsRemoved = getMyData('metric_history_popVars_SHard.txt')
+    fileNamesList = dataDict.keys()
+    sns.set()
+    myColors = ['royalblue', 'mediumvioletred']
+    for index, myFile in enumerate(fileNamesList):
+        meanMetric, stDevmetric = getMyData(myFile)
+        xAxisRange = len(meanMetric) + 1
+        # xAxis = list(range(1, xAxisRange))
+        # make data frame to pass code into seaborn
+        df = pd.DataFrame({'x': (range(1, xAxisRange)), 'y': meanMetric})
+        plt.errorbar(df.index + 1, meanMetric, yerr=stDevmetric, fmt='-o', color=myColors[index],
+                     label=dataDict[myFile])
+    plt.xlabel(myXLabel, fontsize=18)
+    plt.ylabel(myYLabel, fontsize=18)
+    plt.legend()
+    plt.show()
 
-xAxisRange = len(meanSplitsforVarsRemoved) + 1
-xAxis = list(range(1,xAxisRange))
-# make data fram to pass code into seaborn
-df = pd.DataFrame({'x': (range(1,xAxisRange)), 'y': meanSplitsforVarsRemoved})
-# plot
-sns.set()
-plt.errorbar(df.index+1, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-o', color = 'royalblue', label='Super Hard Puzzles')
-#placeholder for easy puzzles
-#plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
-plt.xlabel('Variables Removed', fontsize=18)
-plt.ylabel('Splits Made',fontsize=18)
-plt.legend()
-plt.show()
+    return 0
 
+def barPlotPrep(fileName):
+    with open(fileName) as f:  # splits metrics
+        myMetricsData = json.load(f)
+    metricList = list(myMetricsData.values())
+    flatMetricList = []
+    for singleList in metricList:
+        for listElement in singleList:
+            flatMetricList.append(listElement)
 
-
-# --------------------------- Plots for Multi-Solutions ------------------------------------------------------------
-# For delta metric
-meanSplitsforMultiSoln, _ = getMyData('metric_history_100sols_splits_SHard.txt')
-meanSplitsforMultiSoln = np.diff(meanSplitsforMultiSoln)
-stDevforMultiSoln = np.std(meanSplitsforMultiSoln)
-xAxisRange = len(meanSplitsforMultiSoln) + 1
-xAxis = list(range(1,xAxisRange))
-# make data fram to pass code into seaborn
-df = pd.DataFrame({'x': (range(1,xAxisRange)), 'y': meanSplitsforMultiSoln})
-# plot
-sns.set()
-plt.errorbar(df.index+1, meanSplitsforMultiSoln, yerr=stDevforMultiSoln, fmt='-o', color = 'royalblue', label='Super Hard Puzzles')
-#placeholder for easy puzzles
-#plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
-plt.xlabel('Number of Solutions Found', fontsize=18)
-plt.ylabel('$\Delta$ Splits Made',fontsize=18)
-plt.legend()
-plt.show()
+    print(flatMetricList)
+    flatMetricList2 = np.asarray(flatMetricList)
+    flatMetricList2 = reject_outliers(flatMetricList2, 0.5)
 
 
-# for regular metric
-meanSplitsforMultiSoln, stDevforMultiSoln = getMyData('metric_history_100sols_splits_SHard.txt')
-xAxisRange = len(meanSplitsforMultiSoln) + 1
-xAxis = list(range(1,xAxisRange))
-# make data fram to pass code into seaborn
-df = pd.DataFrame({'x': (range(1,xAxisRange)), 'y': meanSplitsforMultiSoln})
-# plot
-sns.set()
-plt.errorbar(df.index+1, meanSplitsforMultiSoln, yerr=stDevforMultiSoln, fmt='-o', color = 'royalblue', label='Super Hard Puzzles')
-#placeholder for easy puzzles
-#plt.errorbar(df.index, meanSplitsforVarsRemoved, yerr=stDevforVarsRemoved, fmt='-x', color='mediumvioletred', label='Easy Puzzles')
-plt.xlabel('Number of Solutions Found', fontsize=18)
-plt.ylabel('Splits Made',fontsize=18)
-plt.legend()
-plt.show()
+    return flatMetricList2
+
+# #-------------------------------- Plots for Pop Vars ----------------------------------------------------------
+# dataSetPopsVarsHard_Splits = {'metric_history_popVars_splits_SHard.txt':'Super Hard Puzzles', 'metric_history_popVar_splits_Ceasy.txt': 'Easy Puzzles'}
+# makeScatterplot(dataSetPopsVarsHard_Splits, 'Variables Removed', 'Splits Made')
+#
+#
+# dataSetPopsVarsHard_Backtrack = {'metric_history_popVars_backtracks_SHard.txt':'Super Hard Puzzles', 'metric_history_popVar_backtracks_Ceasy.txt': 'Easy Puzzles'}
+# makeScatterplot(dataSetPopsVarsHard_Backtrack, 'Variables Removed', 'Backtracks Made')
+#
+# # --------------------------------Plots for Multi-Solutions----------------------------------
+# dataSet50Solns_Splits = {'metric_history_50sols_splits_SHard.txt':'Super Hard Puzzles', 'metric_history_50sols_splits_Ceasy.txt': 'Easy Puzzles'}
+# makeScatterplot(dataSet50Solns_Splits, 'Solutions Found', 'Splits Made')
+#
+# dataSet50Solns_Backtracks = {'metric_history_50sols_backtracks_SHard.txt':'Super Hard Puzzles', 'metric_history_50sols_backtracks_Ceasy.txt': 'Easy Puzzles'}
+# makeScatterplot(dataSet50Solns_Backtracks, 'Solutions Found', 'Backtracks Made')
 
 
-# ----------------------------------------- Histogram for heuristics ----------------------------------------------
+##----------------------------------------- Histogram for heuristics ----------------------------------------------
 # Cleaning and processing data
-randomMeans = barPlotPrep('metric_history_random_splits_SHard.txt')
-dummyMeans = barPlotPrep('metric_history_jwonesided_splits_SHard.txt')
-DLSIMeans = barPlotPrep('metric_history_DLSI_splits_SHard.txt')
+randomMeans = barPlotPrep('metric_history_DLIS_backtracks_SHard.txt')
+dummyMeans = barPlotPrep('metric_history_DLIS_backtracks_Ceasy.txt')
+DLSIMeans = barPlotPrep('metric_history_DLIS_backtracks_Ceasy.txt')
 # Aggregating Data
 heuristicMeans = [np.mean(randomMeans), np.mean(dummyMeans), np.mean(DLSIMeans)]
 heuristicStdev = [np.std(randomMeans), np.std(dummyMeans), np.std(DLSIMeans)]
